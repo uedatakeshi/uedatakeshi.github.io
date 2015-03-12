@@ -8,6 +8,27 @@ You’ll find this post in your `_posts` directory. Go ahead and edit it and re-
 
 To add new posts, simply add a file in the `_posts` directory that follows the convention `YYYY-MM-DD-name-of-post.ext` and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.
 
+## ちょっと試してみたいんだけど
+
+1. 一つ目
+1. 二つ目**ガッシュ**
+1. 三つ目
+
+* * *
+
+* わん
+* わん
+* わん
+* わん
+
+
+
+> まあまあ
+> まあまあ
+> まあまあ
+> まあまあ
+> まあまあ
+
 Jekyll also offers powerful support for code snippets:
 
 {% highlight ruby %}
@@ -18,7 +39,6 @@ print_hi('Tom')
 #=> prints 'Hi, Tom' to STDOUT.
 {% endhighlight %}
 
-{% post_url 2011-09-09-cp136 %}
 
 Check out the [Jekyll docs][jekyll] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll’s dedicated Help repository][jekyll-help].
 
