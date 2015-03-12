@@ -1,0 +1,104 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(7) Validate
+date: '2011-09-11T03:31:00.003+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:09:16.322+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5494659385531429414
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp137.html
+---
+
+<h1>Validate</h1>
+<p>
+ということで無事 members の会員登録部分が動くようになりました。<br />
+ブラウザから、<br />
+<br />
+http://localhost/~myname/cake/members<br />
+<br />
+を開いて、いろいろクリックしたりしてみます。</p>
+<p>
+で、会員の新規登録<br />
+<br />
+http://localhost/~myname/cake/members/add<br />
+<br />
+をやってみると、custom エラーになって登録ができません。</p>
+
+<p>
+最初に bake でモデルを作った時に、バリデーションの設定で、email と password に custom をセットして、その内容を入れていないのが原因です。<br />
+ということで validate をちゃんと作ります。</p>
+<p>
+/app/models/member.php の、
+今こうなっているところを
+<pre class="brush: php">
+  'email' => array(
+   'custom' => array(
+    'rule' => array('custom'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+   'email' => array(
+    'rule' => array('email'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+   'notempty' => array(
+    'rule' => array('notempty'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+</pre>
+<p>
+以下のように書き換えます。</p>
+<pre class="brush: php">
+  'email' => array(
+   'custom' => array(
+    'rule' => array('isUnique'),
+    'message' => 'このメールアドレスは既に登録されています',
+    'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+   'email' => array(
+    'rule' => array('email'),
+    'message' => 'メールアドレスを正しく入力してください',
+   ),
+   'notempty' => array(
+    'rule' => array('notempty'),
+    'message' => 'メールアドレスを入力してください',
+   ),
+  ),
+</pre>
+<p>
+パスワードの部分は、以下のように書き換えます。</p>
+<pre class="brush: php">
+  'password' => array(
+   'custom' => array(
+    'rule' => array('custom', '/^[a-zA-Z0-9\_\-]{6,10}$/i'),
+    'message' => 'パスワードは6文字以上10文字以内で入力してください',
+   ),
+   'notempty' => array(
+    'rule' => array('notempty'),
+    'message' => 'パスワードを入力してください',
+   ),
+  ),
+</pre>
+<p>
+ソース中に日本語が入りましたので文字コードをutf-8に設定して保存します。<br />
+会員の新規登録が出来ることを確認します。</p>
+<br />
+http://localhost/~myname/cake/members/add
+<br />
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-11-cakephp138 %}">>>次のページ「フォームの見た目を変える」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-09-cakephp136 %}">&lt;&lt;前のページ「bakeする(controller,view)」へ</a></li>
+</ul>

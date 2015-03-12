@@ -1,0 +1,67 @@
+---
+layout: post
+title: XAMPP for Windows の .htaccess 設置でエラーで Symfony2 用に short_open_tag が Offにできない
+date: '2012-04-04T06:44:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2012-04-04T06:52:30.970+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1390910029566988733
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/04/xampp-for-windows-htaccess-symfony2.html
+---
+
+<h1>XAMPP for Windows の .htaccess 設置でエラーで Symfony2 用に short_open_tag が Offにできない</h1>
+<p>
+いやー、まあ、何事かと思いましたけどね。
+XAMPP のデフォルトでは、php.ini の short_open_tag が On で、apache の AllowOverride が All じゃない、
+ってことで、Symfony2 を動かそうとして short_open_tag を Off にするとメタメタになってしまうわけです。
+で、悩むこと数日間。
+</p>
+<p>設定は、
+<pre class="brush: shell">
+C:\xampp\apache\conf\httpd.conf
+</pre>
+ではなく、
+<pre class="brush: shell">
+C:\xampp\apache\conf\extra\httpd-xampp.conf 
+</pre>
+でやります。
+</p>
+<p>以下のようになっている部分があるので、
+<pre class="brush: shell">
+&lt;Directory "C:/xampp/htdocs/xampp"&gt;
+    &lt;IfModule php5_module&gt;
+     &lt;Files "status.php"&gt;
+      php_admin_flag safe_mode off
+     &lt;/Files&gt;
+    &lt;/IfModule&gt;
+    AllowOverride AuthConfig
+&lt;/Directory&gt;
+</pre>
+
+以下のように書き換えます。
+<pre class="brush: shell;">
+&lt;Directory "C:/xampp/htdocs/xampp"&gt;
+    &lt;IfModule php5_module&gt;
+     &lt;Files "status.php"&gt;
+      php_admin_flag safe_mode off
+     &lt;/Files&gt;
+    &lt;/IfModule&gt;
+    AllowOverride All
+&lt;/Directory&gt;
+</pre>
+</p>
+<p>
+それから、C:\xampp\php\php.ini を開いて、
+<pre class="brush: shell">
+short_open_tag = Off
+</pre>
+
+として、
+
+C:\xampp\htdocs\xampp 以下に、.htaccess を置いて、
+<pre class="brush: shell">
+php_flag short_open_tag On 
+</pre>
+
+と書けばよい。ちなみに Windows で .htaccess というファイルを作るには、FTPソフトを使えばよい。
+</p>

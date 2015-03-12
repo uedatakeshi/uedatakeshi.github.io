@@ -1,0 +1,191 @@
+---
+layout: post
+title: phpとMySQLで、住所から郵便番号を検索する（逆引き）
+date: '2010-08-11T11:53:00.002+09:00'
+author: 上田 剛
+tags:
+- MySQL
+- php
+modified_time: '2010-08-11T11:56:07.973+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-3938886127103887832
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/08/phpmysql.html
+---
+
+大昔に会社のホームページ用に用意した原稿だけど、このまま埋もれてるのも何なのでこちらに載せておきます。<br />
+<br />
+今回は、リアルな住所から郵便番号を検索するプログラムについて考えてみることにします。<br />
+例えば「札幌市清田区美しが丘一条Ｎ丁目Ｍ－１」というような、都道府県の部分だけを除いてあとは全部ひとつつながりの住所があるとする。<br />
+これがまあ、15万件くらいですかね、それくらいの件数の住所データを渡されて、「これの郵便番号を出せ」と、そういう指令が出たとする訳です。<br />
+さあどうしようかと。<br />
+話を簡単にするために、その住所データは以下のようなMySQLデータベースのテーブルに入っているとします。<br />
+<pre class="brush: shell">
+CREATE TABLE users (
+    id int(11) NOT NULL auto_increment,
+    name varchar(100),
+    address varchar(255),
+    zip varchar(7),
+    PRIMARY KEY (id)
+)DEFAULT CHARSET=utf8;
+</pre>
+住所はaddressのカラムで、郵便番号はzipですが、今はzipには何も入っていません。<br />
+<br />
+で、まず考えるのは<br />
+<br />
+日本郵便　<a href="http://www.post.japanpost.jp/zipcode/index.html">http://www.post.japanpost.jp/zipcode/index.html</a><br />
+<br />
+のページへ行って、郵便番号のデータをもらってくることです。ここに「郵便番号データのダウンロード」というリンクがありますのでクリックして、「全国一括」というやつをダウンロードします。<br />
+問題はその中味なのですが、詳しくは<br />
+<br />
+郵便番号データの説明　<a href="http://www.post.japanpost.jp/zipcode/dl/readme.html">http://www.post.japanpost.jp/zipcode/dl/readme.html</a><br />
+<br />
+を読んでもらうことにして、この中で使えそうなのは8番目の市区町村名と9番目の町域名、そしてももちろん3番目の郵便番号(7桁)になりそうです。<br />
+その３つだけをインポートしてもよいのですが、それも面倒なので、せっかくのCSV形式のファイルですからそのままMySQLのLOAD DATAを使って一気に入れることにします。<br />
+最初に、以下のようなテーブルを作っておきます。<br />
+<pre class="brush: shell">
+CREATE TABLE zips (
+    zkd_code VARCHAR(255),
+    kyu_zip VARCHAR(255),
+    zip VARCHAR(255),
+    ken_yomi VARCHAR(255),
+    siku_yomi VARCHAR(255),
+    cyou_yomi VARCHAR(255),
+    ken VARCHAR(255),
+    siku VARCHAR(255),
+    cyou VARCHAR(255),
+    fg_a INT,
+    fg_b INT,
+    fg_c INT,
+    fg_d INT,
+    fg_e INT,
+    fg_f INT
+);
+</pre>
+次に、上記日本郵便のサイトでダウンロードした郵便番号データを適当なファイル名で(ここではyubin.csv)、サーバーに保存して、MySQLのコンソール画面から、<br />
+<pre class="brush: shell">
+mysql> LOAD DATA LOCAL INFILE "/home/myhome/yubin.csv" INTO TABLE zips FIELDS TERMINATED BY ',' ENCLOSED BY '"';
+</pre>
+と、やります。<br />
+これ一発で郵便番号データがzipsテーブルに入ります。<br />
+<br />
+以上でデータは揃いましたので、usersテーブルの<br />
+<pre class="brush: shell">
++-------+--------------------------------------------------+
+| id    | address                                          |
++-------+--------------------------------------------------+
+|     1 | 札幌市清田区美しが丘一条Ｎ丁目Ｍ－１             |
++-------+--------------------------------------------------+
+</pre>
+というデータと、zipsテーブルの<br />
+<pre class="brush: shell">
++---------+--------------------+--------------------+
+| zip     | siku               | cyou               |
++---------+--------------------+--------------------+
+| 0040811 | 札幌市清田区       | 美しが丘一条       |
+| 0040813 | 札幌市清田区       | 美しが丘三条       |
+| 0040812 | 札幌市清田区       | 美しが丘二条       |
+| 0040815 | 札幌市清田区       | 美しが丘五条       |
+| 0040814 | 札幌市清田区       | 美しが丘四条       |
++---------+--------------------+--------------------+
+</pre>
+というようなデータを見比べて、郵便番号を照合するプログラムを組めばよいわけです。<br />
+<br />
+zipsの方は市区町村名と町域名が別々のカラムになっていますので、 CONCAT を使って合体させて処理します。<br />
+一方リアルの住所には番地とか何丁目とかいうのが最後の方についていますので、それをどんどん削除していって、それが、 CONCAT で合体した市区町村名と町域名にマッチしたらその時の郵便番号を取得すればよい、という訳です。<br />
+文字を後ろから削除するには LEFT を使います。<br />
+<pre class="brush: shell">
+SELECT 
+    zip, siku, cyou 
+FROM 
+    zips
+WHERE 
+    CONCAT(siku, cyou) = LEFT('札幌市清田区美しが丘一条Ｎ丁目Ｍ－１', 10)
+</pre>
+このクエリーはヒットしませんが、 LEFT の最後の数字を１ずつ増やして消していけば、いつかはヒットするはずです。<br />
+<br />
+ということで、まずは対象となる住所データとその文字列長さを users テーブルから取得します。<br />
+<pre class="brush: php">
+$query = "SELECT address, CHAR_LENGTH(address) as len FROM users";
+$result = mysql_query($query);
+if ($result) {
+    $n = mysql_num_rows($result);
+    if ($n){
+        while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+            for($i=$row['len'];$i>0;$i--){
+                // ここに郵便番号テーブルとの照合を入れる
+            }
+        }
+    }
+}
+</pre>
+forループを使って、最初に数えた文字列長さから始めて1文字すつ削っていこうという作戦です。<br />
+そして forループの中に以下の照合処理を入れます。<br />
+<pre class="brush: php">
+$query2 = "SELECT zip FROM zips WHERE CONCAT(siku, cyou) = LEFT('$address', $i)";
+$result2 = mysql_query($query2);
+if ($result2) {
+    $n2 = mysql_num_rows($result2);
+    if ($n2){
+        while ($row2 = mysql_fetch_array($result2, MYSQL_ASSOC)) {
+            echo $row2['zip'] . "\t";
+        }
+        break;
+    }
+}
+</pre>
+breakを使って、マッチした時点で forループを抜けます。<br />
+<br />
+で、これでテストしてみるとすぐに分かりますが、処理が大変に遅いです。私の試算では15万件のデータを処理するのに、18時間かかると出ました（笑）。<br />
+これはおそらく CONCAT でカラムを合体させてるのが原因でしょう。<br />
+ということで、市区町村名と町域名をバラバラにしておく意味はないので、カラムとして合体させます。<br />
+<pre class="brush: shell">
+ALTER TABLE zips ADD COLUMN sikucyou VARCHAR(52);
+UPDATE zips SET sikucyou=CONCAT(siku, cyou);
+</pre>
+最初に新しいカラムを追加して、UPDATE をかけています。<br />
+ついでにインデックスも追加しておきます。<br />
+<pre class="brush: shell">
+ALTER TABLE zips ADD INDEX (sikucyou);
+</pre>
+PHPソース内のSQLの方も修正します。<br />
+SQLの CHAR_LENGTH もめためたに遅いのでPHP側での処理に変更します。<br />
+<pre class="brush: php">
+$query = "SELECT id, address FROM users";
+$result = mysql_query($query);
+if ($result) {
+    $n = mysql_num_rows($result);
+    if ($n){
+        while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+            $address = mysql_real_escape_string($row['address']);
+            $len = mb_strlen($row['address']);
+            $zip = '';
+            for($i=$len;$i>0;$i--){
+                $query2 = "SELECT zip FROM zips WHERE sikucyou = LEFT('$address', $i)";
+                $result2 = mysql_query($query2);
+                if ($result2) {
+                    $n2 = mysql_num_rows($result2);
+                    if ($n2){
+                        while ($row2 = mysql_fetch_array($result2, MYSQL_ASSOC)) {
+                            $zip = $row2['zip'];
+                        }
+                        break;
+                    }
+                }
+            }
+            $query3 = "UPDATE users SET zip='$zip' where id='{$row['id']}'";
+            $result3 = mysql_query($query3);
+        }
+    }
+}
+</pre>
+<br />
+実行してみましょう。私の環境では15万件の住所の照合は、2分で終わりました。<br />
+問題はこの方法でやった郵便番号が本当に全部合っているのか、ということですが、全体の約１４％は郵便番号を照合することができません。<br />
+リアルの住所自体には大字（おおあざ）などの表記のゆれがあるのと、それと、この方法では町域が「以下に掲載がない場合」の判別ができないからです。<br />
+照合できなかった住所でGoogle郵便番号検索をしてみましょう。<br />
+
+これはちゃんとヒットしますが、<br />
+<blockquote>郵便番号　渋谷区桜丘町</blockquote>
+これはヒットしません。<br />
+<blockquote>郵便番号　千代田区丸の内</blockquote>
+
+Google先生でも無理なんです。<br />

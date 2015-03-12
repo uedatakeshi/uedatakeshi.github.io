@@ -1,0 +1,146 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(24) 検索とPaginationとHABTM
+date: '2011-11-06T06:38:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:04:11.752+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1090650723237196596
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/11/cakephp1324.html
+---
+
+<h1>検索とPaginationとHABTM</h1>
+
+<p>で、さらにやっかいなのが、ここに「好きな物」のチェックボックスの複数選択検索を入れる場合です。
+HABTMの関連テーブルですね。
+一体どうすりゃいいんでしょうか。ということで相当悩みました。
+結論としては、一旦その「好きな物」を選択している会員のIDを全部取り出して、そいつを条件に入れちゃえばいいんじゃなかろうかと。
+クエリーのイメージはこんな感じ。</p>
+
+<pre class="brush: sql">
+SELECT m.id FROM members m WHERE m.id IN
+(SELECT member_id FROM members_favorites mf WHERE mf.favorite_id IN (1,2));
+</pre>
+
+<p>つまり()内のSELECTの部分をあらかじめデータ取得しておけばいいと。
+ということでこうなった。</p>
+
+<pre class="brush: php">
+            $fid = $this->Member->MembersFavorite->find('list', array(
+                'order'=>array('MembersFavorite.member_id DESC'),
+                'group'=>array('MembersFavorite.member_id'),
+                'fields' => array('MembersFavorite.member_id'),
+                'conditions' => array('MembersFavorite.favorite_id' => $favorite_id)
+            ));
+            $conditions = array("Member.id" => $fid);
+            $data = $this->paginate('Member', $conditions);
+</pre>
+
+
+<p>これは上記ではIN ()の中はSELECT文になっているが、CakePHPの文法だとそれは入らないようなので、実際に配列が入る。こんな感じになる。</p>
+
+<pre class="brush: sql">
+SELECT `MembersFavorite`.`id`, `MembersFavorite`.`member_id` 
+FROM `members_favorites` AS `MembersFavorite` 
+WHERE `MembersFavorite`.`favorite_id` IN (1, 2, 3) 
+GROUP BY `MembersFavorite`.`member_id` 
+ORDER BY `MembersFavorite`.`member_id` DESC 
+</pre>
+
+<p>最終的にこうなりました。</p>
+
+<pre class="brush: php">
+    function admin_search() {
+        $this->Member->recursive = 0;
+
+        if (!empty($this->data)) {
+            $f = $this->data['Member']['from'];
+            $t = $this->data['Member']['to'];
+            $email = $this->data['Member']['email'];
+            $type_id = $this->data['Member']['type_id'];
+            $favorite_id = $this->data['Member']['favorites'];
+        }else{
+            foreach ($this->passedArgs as $k => $v){
+                if ($k == 'from'){
+                    list($f['year'], $f['month'], $f['day']) = preg_split("/-/", $v);
+                }elseif($k == 'to'){
+                    list($t['year'], $t['month'], $t['day']) = preg_split("/-/", $v);
+                }elseif($k == 'email'){
+                    $email = urldecode($v);
+                }elseif($k == 'type_id'){
+                    $type_id = urldecode($v);
+                } elseif(preg_match("/^favorite_id_([0-9]+)$/", $k, $regs)) {
+                    $favorite_id[$regs[1]] = $v;
+                }
+            }
+        }
+     
+        if (isset($f) && isset($t)){
+            if ($this->_from_to_check($f, $t)) {
+                $from = $f['year']."-".$f['month']."-".$f['day'];
+                $to = $t['year']."-".$t['month']."-".$t['day'];
+                $this->data['Member']['from'] = $f;
+                $this->data['Member']['to'] = $t;
+            }
+        }
+        if(isset($email)){
+            $this->data['Member']['email'] = $email;
+        }
+        if(isset($type_id)){
+            $this->data['Member']['type_id'] = $type_id;
+        }
+        if (isset($favorite_id)){
+            $this->data['Member']['favorites'] = $favorite_id;
+        }
+        
+     
+        $searchword = array();
+        $conditions = array();
+        if (isset($from) && isset($to)){
+            $searchword = array(
+                "from" => urlencode($from),
+                "to" => urlencode($to),
+            );
+            $conditions = array("Member.created BETWEEN ? AND ?" => array($from,$to));
+        }
+        if (isset($email) && $email){
+            $searchword = $searchword + array(
+                "email" => urlencode("$email"),
+            );
+            $conditions = $conditions + array("Member.email LIKE" => "%$email%");
+        }
+        if (isset($type_id) && $type_id){
+            $searchword = $searchword + array(
+                "type_id" => urlencode("$type_id"),
+            );
+            $conditions = $conditions + array("Member.type_id" => $type_id);
+        }
+        if (isset($favorite_id) && $favorite_id){
+            foreach ($favorite_id as $k => $v){
+                $temp_favotite['favorite_id_'.$k] = $v;
+            }
+            $searchword = $searchword + $temp_favotite;
+            $fid = $this->Member->MembersFavorite->find('list', array(
+                'order'=>array('MembersFavorite.member_id DESC'),
+                'group'=>array('MembersFavorite.member_id'),
+                'fields' => array('MembersFavorite.member_id'),
+                'conditions' => array('MembersFavorite.favorite_id' => $favorite_id)
+            ));
+            $conditions = $conditions + array("Member.id" => $fid);
+        }
+     
+        $data = $this->paginate('Member', $conditions);
+        $this->set('searchword', $searchword);
+        $this->set("members", $data);
+         
+        $favorites = $this->Member->Favorite->find('list');
+        $types = $this->Member->Type->find('list');
+        $this->set(compact('favorites','types'));
+    }
+</pre>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/11/cakephp1325.html">>>次のページ「検索結果CSVダウンロード」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1323.html">&lt;&lt;前のページ「検索とPagination」へ</a></li>
+</ul>

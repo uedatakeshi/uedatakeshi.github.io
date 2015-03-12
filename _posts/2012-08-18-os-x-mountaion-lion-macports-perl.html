@@ -1,0 +1,67 @@
+---
+layout: post
+title: OS X Mountaion Lion で MacPorts を使って開発環境を整える(perl編)
+date: '2012-08-18T00:30:00.000+09:00'
+author: 上田 剛
+tags:
+- OSX
+- perl
+- apache
+modified_time: '2012-08-27T12:00:20.257+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5081630144899895051
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/08/os-x-mountaion-lion-macports-perl.html
+---
+
+<h1>OS X Mountaion Lion で MacPorts を使って開発環境を整える(perl編)</h1><br />
+使うことはないかもしれないが、使えないのも困るだろうということで、perlの設定もしておく。<br />
+まず、<br />
+<br />
+<pre class="brush: shell">$ sudo vim /opt/local/apache2/conf/httpd.conf
+</pre><br />
+として、<br />
+<br />
+<pre class="brush: shell">&lt;Directory "/opt/local/apache2/cgi-bin"&gt;
+     AllowOverride None
+     Options None
+     Order allow,deny
+     Allow from all
+&lt;/Directory&gt;
+</pre><br />
+Options None のところを、コメントアウトして、<br />
+Options Indexes MultiViews ExecCGI FollowSymLinks Includes<br />
+に変更<br />
+<br />
+<pre class="brush: shell">&lt;Directory "/opt/local/apache2/cgi-bin"&gt;
+     AllowOverride None
+     Options Indexes MultiViews ExecCGI FollowSymLinks Includes
+    #Options None
+     Order allow,deny
+     Allow from all
+&lt;/Directory&gt;
+</pre><br />
+あと、<br />
+<br />
+<pre class="brush: shell">AddHandler cgi-script .cgi
+</pre><br />
+のコメントアウトを外す。<br />
+<br />
+アパッチ再起動<br />
+<br />
+<pre class="brush: shell">$ sudo /opt/local/apache2/bin/apachectl restart
+</pre><br />
+で、<br />
+<br />
+<pre class="brush: perl">#!/opt/local/bin/perl
+print "Content-type: text/html\n\n";
+print "ok";
+</pre><br />
+とだけ書いたファイルを test.cgi として保存して、htdocs 以下に置く。<br />
+パーミッションの設定、<br />
+<br />
+<pre class="brush: shell">$ chmod 0755 test.cgi
+</pre><br />
+をやっておく。<br />
+あとはブラウザから開ければOK。<br />
+<br />
+<br />
+<br />

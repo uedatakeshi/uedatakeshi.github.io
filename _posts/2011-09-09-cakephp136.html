@@ -1,0 +1,181 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(6) bakeする(controller,view)
+date: '2011-09-09T16:39:00.006+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:09:37.326+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-254966848647209397
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp136.html
+---
+
+<h1>bakeする(controller,view)</h1>
+
+<p>
+次に bake のメニューから、 C を選んでコントローラを作ります。</p>
+<pre class="brush: shell">
+> C
+---------------------------------------------------------------
+Bake Controller
+Path: /Users/myname/Sites/cake/app/controllers/
+---------------------------------------------------------------
+Possible Controllers based on your current database:
+1. Favorites
+2. Members
+3. MembersFavorites
+4. Types
+5. Users
+Enter a number from the list above,
+type in the name of another controller, or 'q' to exit  
+[q] > 2
+</pre>
+<p>
+モデルの時と同様の選択画面になるので、
+<pre class="brush: shell">
+2. Members
+</pre>
+を選択します。
+</p>
+<pre class="brush: shell">
+---------------------------------------------------------------
+Baking MembersController
+---------------------------------------------------------------
+Would you like to build your controller interactively? (y/n) 
+[y] > y
+</pre>
+<p>
+とりあえずYESですね。
+</p>
+<pre class="brush: shell">
+Would you like to use dynamic scaffolding? (y/n) 
+[n] > n
+</pre>
+<p>
+スキャフォルドをするかどうかですが、しないのでNOです。
+</p>
+<pre class="brush: shell">
+Would you like to create some basic class methods 
+(index(), add(), view(), edit())? (y/n) 
+[n] > y
+</pre>
+<p>
+indexとかaddとかの基本のアクションを作るかどうかですね。ここでYESです。
+</p>
+<pre class="brush: shell">
+Would you like to create the basic class methods for admin routing? (y/n) 
+[n] > y
+</pre>
+<p>
+adminルーティングを使うかどうかです。これはYESです。
+</p>
+<pre class="brush: shell">
+Would you like this controller to use other helpers
+besides HtmlHelper and FormHelper? (y/n) 
+[n] > n
+Would you like this controller to use any components? (y/n) 
+[n] > n
+Would you like to use Session flash messages? (y/n) 
+[y] > y
+
+---------------------------------------------------------------
+The following controller will be created:
+---------------------------------------------------------------
+Controller Name:
+ Members
+---------------------------------------------------------------
+Look okay? (y/n) 
+[y] > y
+</pre>
+<p>
+その後はそのままです。
+/app/controllers/members_controller.php が作られました。
+</p>
+<p>
+次に、 V を選んでビューを作ります。
+</p>
+<pre class="brush: shell">
+> V
+---------------------------------------------------------------
+Bake View
+Path: /Users/myname/Sites/cake/app/views/
+---------------------------------------------------------------
+Possible Controllers based on your current database:
+1. Favorites
+2. Members
+3. MembersFavorites
+4. Types
+5. Users
+Enter a number from the list above,
+type in the name of another controller, or 'q' to exit  
+[q] > 2
+</pre>
+<p>
+やはり2番のMembersを選んで進みます。
+</p>
+<pre class="brush: shell">
+Would you like bake to build your views interactively?
+Warning: Choosing no will overwrite Members views if it exist. (y/n) 
+[n] > y
+</pre>
+<p>
+ここはYESにします。
+</p>
+<pre class="brush: shell">
+Would you like to create some CRUD views
+(index, add, view, edit) for this controller?
+NOTE: Before doing so, you'll need to create your controller
+and model classes (including associated models). (y/n) 
+[y] > y
+</pre>
+<p>
+ここもとりあえずYESにします。
+</p>
+<pre class="brush: shell">
+Would you like to create the views for admin routing? (y/n) 
+[n] > y
+</pre>
+<p>
+admin 用のviewを作るかどうかです。これもYESにします。
+</p>
+<p>
+/app/views/ 以下に members というフォルダーが作られ、 index.ctp 他の各アクション用ビューが自動生成されます。
+登録フォームの view は以下のようになりました。
+</p>
+<pre class="brush: php">
+&lt;div class="members form"&gt;
+&lt;?php echo $this-&gt;Form-&gt;create('Member');?&gt;
+ &lt;fieldset&gt;
+  &lt;legend&gt;&lt;?php __('Add Member'); ?&gt;&lt;/legend&gt;
+ &lt;?php
+  echo $this-&gt;Form-&gt;input('email');
+  echo $this-&gt;Form-&gt;input('password');
+  echo $this-&gt;Form-&gt;input('type_id');
+  echo $this-&gt;Form-&gt;input('birthday');
+  echo $this-&gt;Form-&gt;input('img1');
+  echo $this-&gt;Form-&gt;input('img2');
+  echo $this-&gt;Form-&gt;input('Favorite');
+ ?&gt;
+ &lt;/fieldset&gt;
+&lt;?php echo $this-&gt;Form-&gt;end(__('Submit', true));?&gt;
+&lt;/div&gt;
+&lt;div class="actions"&gt;
+ &lt;h3&gt;&lt;?php __('Actions'); ?&gt;&lt;/h3&gt;
+ &lt;ul&gt;
+
+  &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('List Members', true), array('action' =&gt; 'index'));?&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('List Types', true), array('controller' =&gt; 'types', 'action' =&gt; 'index')); ?&gt; &lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('New Type', true), array('controller' =&gt; 'types', 'action' =&gt; 'add')); ?&gt; &lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('List Favorites', true), array('controller' =&gt; 'favorites', 'action' =&gt; 'index')); ?&gt; &lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('New Favorite', true), array('controller' =&gt; 'favorites', 'action' =&gt; 'add')); ?&gt; &lt;/li&gt;
+ &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
+<p>
+users についても同じようにしてコントローラとビューを作ります。
+</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-11-cakephp137 %}">>>次のページ「Validate」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp135 %}">&lt;&lt;前のページ「bakeする(model)」へ</a></li>
+</ul>

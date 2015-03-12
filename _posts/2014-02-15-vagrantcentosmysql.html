@@ -1,0 +1,43 @@
+---
+layout: post
+title: vagrantでCentOSの環境があってそこに入れたMysqlが度々死ぬ
+date: '2014-02-15T12:55:00.003+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2014-02-15T12:55:39.440+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-4440034120268612786
+blogger_orig_url: http://uedatakeshi.blogspot.com/2014/02/vagrantcentosmysql.html
+---
+
+<h1>vagrantでCentOSの環境があってそこに入れたMysqlが度々死ぬ</h1><br />
+まあ世の中便利になったもので、vagrantっつーもんがあって、これを入れるとCentOS+Apache+PHP+Mysqlみたいな開発環境が簡単に作れてしまう。ウインドウズでもマックでも。<br />
+こりゃーいい、ってんで早速使っているが、使っているとしばしばMysqlが死ぬ。<br />
+<br />
+<pre class="brush: shell">$ mysql -u root -p
+</pre><br />
+とやってmysqlに入ろうとすると、<br />
+<br />
+<pre class="brush: shell">ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/lib/mysql/mysql.sock' (111)
+</pre><br />
+と出る。これは一体なんだろう。<br />
+このエラーメッセージで検索すると、だいたいが<br />
+・mysql.sockというファイルがないからです。作りましょう。<br />
+とか<br />
+・/var/lib/mysqlの所有者が違います<br />
+とかそんな回答が得られるんだが、だめである。<br />
+/var/lib/mysql/mysql.sock も存在しているし、/var/lib/mysql の所有者はmysql だ。<br />
+<br />
+<b>これはつまり、ないからだめなんじゃなくて、あるからだめなんである。</b><br />
+<br />
+という訳で消す。<br />
+<br />
+<pre class="brush: shell">$ sudo rm /var/lib/mysql/mysql.sock
+</pre><br />
+としてからvagrantを再起動。<br />
+<br />
+<pre class="brush: shell">$ vagrant halt
+$ vagrant up
+$ vagrant ssh
+$ mysql -u root -p
+</pre><br />
+治った。まあ多分、ぶちっと終了してしまうのでファイルが壊れるんだろう。<br />

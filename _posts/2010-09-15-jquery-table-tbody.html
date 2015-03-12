@@ -1,0 +1,88 @@
+---
+layout: post
+title: jQuery で table をいじるときは tbody を忘れない
+date: '2010-09-15T18:27:00.003+09:00'
+author: 上田 剛
+tags:
+- php
+- jQuery
+modified_time: '2010-09-15T18:36:14.775+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-3761823539343101786
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/09/jquery-table-tbody.html
+---
+
+まぁ普通に会員の一覧検索みたいな管理画面を作っていて、普通に table でタグが組んであって、それを項目名をクリックしたらその項目名の昇順で並び替えたいとか、そんなような作業ってのは結構あるわけで。<br />
+なんかこう、テーブルのそのデータ行の部分だけを Ajax で load するようにしたいなと。<br />
+思ったわけです。<br />
+<br />
+で、テーブルは普通に、こんな感じであって、<br />
+<pre class="brush: html; highlight: [7,8,9,10,11,12,13,14,15,16]">
+&lt;table id="result"&gt;
+  &lt;tr&gt;
+    &lt;th&gt;ID&lt;/th&gt;
+    &lt;th&gt;氏名&lt;/th&gt;
+    &lt;th&gt;メールアドレス&lt;/th&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;1&lt;/td&gt;
+    &lt;td&gt;山田&lt;/td&gt;
+    &lt;td&gt;yamada@・・・.jp&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;2&lt;/td&gt;
+    &lt;td&gt;佐藤&lt;/td&gt;
+    &lt;td&gt;sato@・・・.jp&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+このデータ行の部分だけを Ajax で書き換えたいってことなんですが、どうすればいいですかね？<br />
+テーブルの2行目以降を一旦 remove() とかで消して、そこに append() すりゃいいんじゃないかとか、いろいろ悩んでみたんだけど、結局、tbodyを使うってことで解決しました。<br />
+先のテーブルを以下のように書き直します。<br />
+<pre class="brush: html; highlight: [2,8,9,20]">
+&lt;table id="result"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;ID&lt;/th&gt;
+      &lt;th&gt;氏名&lt;/th&gt;
+      &lt;th&gt;メールアドレス&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;1&lt;/td&gt;
+      &lt;td&gt;山田&lt;/td&gt;
+      &lt;td&gt;yamada@・・・.jp&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;2&lt;/td&gt;
+      &lt;td&gt;佐藤&lt;/td&gt;
+      &lt;td&gt;sato@・・・.jp&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+</pre>
+そして、<br />
+<pre class="brush: js">
+$(document).ready(function() {
+  $('#result tbody').load(
+    './result.php',
+    $('form').serialize(),
+    function(data){}
+  );
+});
+</pre>
+と jQuery で書きます。<br />
+result.php にはページ中のフォームの値がGETで渡っていくので、それを適当に処理してクエリーをかけて結果を元に<br />
+<pre class="brush: html">
+    &lt;tr&gt;
+      &lt;td&gt;1&lt;/td&gt;
+      &lt;td&gt;山田&lt;/td&gt;
+      &lt;td&gt;yamada@・・・.jp&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;2&lt;/td&gt;
+      &lt;td&gt;佐藤&lt;/td&gt;
+      &lt;td&gt;sato@・・・.jp&lt;/td&gt;
+    &lt;/tr&gt;
+</pre>
+の部分だけを出力してやればよいです。

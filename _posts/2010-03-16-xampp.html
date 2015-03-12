@@ -1,0 +1,120 @@
+---
+layout: post
+title: XAMPPのインストールと設定
+date: '2010-03-16T15:31:00.010+09:00'
+author: 上田 剛
+tags:
+- MySQL
+- XAMPP
+- php
+- pear
+modified_time: '2010-03-16T16:34:31.654+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8462775666364510208
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/03/xampp.html
+---
+
+Windowsのphpのバージョンを5.3.2にアップしようとしたらば、apacheまで動かなくなったので、もうあきらめて新規にXAMPPでインストールすることに。<br />
+<br />
+<a href="http://www.apachefriends.org/jp/xampp.html">apache friends</a><br />
+<br />
+ここから XAMPP Windows版 1.7.3 をダウンロードしてインストール。<br />
+<br />
+最初に環境変数に書かれている既存のMySQLとかphpのパスを消去してからやった方がよかったみたいですね。<br />
+既存のそれらのプログラムとごっちゃになってしまって、その修正に丸一日かかってしまった。<br />
+そもそもMySQLがサービスとして動いていたようで、XAMPPはそっちを見に行ってしまった模様。<br />
+マニュアルには最初に「セキュリティ」からMySQLのrootのパスワードを設定せよ、と書いてあるが、既存のMySQLを見に行ってるので既にパスワードがある状態になっている。<br />
+こりゃおかしい、ということで既存のMySQLのサービスを無効にして、環境変数の方は
+<pre class="brush: js">
+C:\xampp\mysql\bin;
+</pre>
+に書き換え、これでようやく正常に戻る。<br />
+改めて「セキュリティ」から進んで、rootのパスワードを設定。<br />
+あとphpMyAdminのDB接続設定をするために C:\xampp\phpMyAdmin\config.inc.php にrootのパスワードを設定
+<pre class="brush: php; highlight: 4">
+/* Authentication type and info */
+$cfg['Servers'][$i]['auth_type']            = 'config';
+$cfg['Servers'][$i]['user']                 = 'root';
+$cfg['Servers'][$i]['password']             = 'password';
+$cfg['Servers'][$i]['AllowNoPassword']      = true;
+</pre>
+それからMySQLの文字コード関係設定。C:\xampp\mysql\bin\my.ini を開いて一番下に、
+<pre class="brush: js">
+[mysqld]
+skip-character-set-client-handshake
+default-character-set = utf8
+character-set-server = utf8
+collation-server = utf8_unicode_ci
+init-connect = SET NAMES utf8
+
+[mysql]
+default-character-set=utf8
+</pre>
+を追加。<br />
+<br />
+次にapacheの設定。<br />
+C:\xampp\apache\conf\httpd.conf を開いて、Directory の
+<pre class="brush: html; highlight: 3">
+&lt;Directory /&gt;
+    Options FollowSymLinks
+    AllowOverride none
+    Order deny,allow
+    Deny from all
+&lt;/Directory&gt;
+</pre>
+を以下に変更
+<pre class="brush: html; highlight: 3">
+&lt;Directory /&gt;
+    Options FollowSymLinks
+    AllowOverride all
+    Order deny,allow
+    Deny from all
+&lt;/Directory&gt;
+</pre>
+
+ついでにバーチャルホストの設定。C:\xampp\apache\conf\extra\httpd-vhosts.conf を開いて、<br />
+以下のコメントアウトを外す
+<pre class="brush: html">
+NameVirtualHost *:80
+</pre>
+
+一番下に以下を追加
+<pre class="brush: html">
+&lt;VirtualHost *:80&gt;
+    ServerAdmin someone@somedomain
+    DocumentRoot "D:/project"
+    ServerName project
+    ErrorLog "logs/project-error.log"
+&lt;/VirtualHost&gt;
+&lt;Directory "D:/project"&gt;
+    Options FollowSymLinks
+    AllowOverride all
+    Order deny,allow
+    Allow from all
+&lt;/Directory&gt;
+</pre>
+
+ここで、最後の Allow from が all になってないと見られないので注意。<br />
+さらに、C:\Windows\System32\drivers\etc\hosts を開いて、
+<pre class="brush: js">
+127.0.0.1       localhost
+127.0.0.1       project
+</pre>
+を追加。<br />
+あと php.ini のこのヘンを修正
+<pre class="brush: php">
+[mbstring]
+mbstring.language = Japanese
+mbstring.internal_encoding = UTF-8
+mbstring.http_input = pass
+mbstring.http_output = pass
+mbstring.encoding_translation = Off
+mbstring.detect_order = UTF-8,SJIS,EUC-JP,JIS,ASCII
+mbstring.substitute_character = none;
+mbstring.func_overload = 0
+</pre>
+最後にpearも既存のphpのパスが悪さしてへんてこりんな設定になっていたので、C:\xampp\php に <a href="http://pear.php.net/go-pear">go-pear</a> を置いて、再インストール
+<pre class="brush: php">
+php go-pear.php
+</pre>
+これはコマンドプロンプトを管理者モードで実行しないとだめ。<br />
+あ、そうそう、あと、こうやってインストールした状態では、apacheの mod_rewrite は最初から使えるようになってるし、phpの short_open_tag はOffになってるぞ。<br />

@@ -1,0 +1,45 @@
+---
+layout: post
+title: 外部のサイトに置いたphpからのjsonデータをjqueryで読み込む
+date: '2011-08-05T14:08:00.001+09:00'
+author: 上田 剛
+tags:
+- php
+- jQuery
+modified_time: '2011-08-05T14:08:55.231+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8404767174577823702
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/08/phpjsonjquery.html
+---
+
+簡単にできると思って実装してしまって、実際に外部のサーバーに設置してから、ありゃ動かないわ、<br />
+あ〜そうだった、Javascript って外部のサーバーのファイル読めないんだっけ、と気づいていつもあきらめていたんだが。<br />
+これを ajax の crossdomain と言うらしい。<br />
+検索すると jquery のプラグインとかで沢山ヒットするが、jquery のドキュメントを見ると1.5以降 jquery 単体でも実現できるようになっている。<br />
+ということで試してみた。<br />
+まず javascript 側は、<br />
+<pre class="brush: js">
+$.ajax({
+    url: "http://xxxxxxxxxxxxxx/get_json.php",
+    data: "name=123",
+    dataType: 'JSONP',
+    async: false,
+    crossDomain: true,
+    success: function(data){
+        console.log(data);
+    }
+</pre>
+こんな感じ。dataType を JSONP にするのがミソだ。データは必ず get で送られるので<br />
+<pre class="brush: js">
+type: "POST"
+</pre>
+とか書いても意味はない。<br />
+で、php 側は
+<pre class="brush: php">
+echo $_GET['callback'].'({"error":"no data"})';
+</pre>
+こんな感じ。<br />
+普通の json 形式データを()で囲んで、その前に<br />
+<pre class="brush: php">
+$_GET['callback']
+</pre>
+をくっつける。<br />

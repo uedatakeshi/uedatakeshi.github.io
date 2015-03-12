@@ -1,0 +1,45 @@
+---
+layout: post
+title: 一日の仕事が終わったらDropboxにシンボリックリンクを貼ってファイルをバックアップしておこう
+date: '2011-07-21T12:08:00.000+09:00'
+author: 上田 剛
+tags:
+- OSX
+modified_time: '2011-07-21T12:09:15.804+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1530509749818037060
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/07/dropbox.html
+---
+
+や、一時は Dropbox フォルダーをドキュメントルートにしたろうかとか思ってやってみたんだが、なんだか OSX の ACL だかなんだかでうまくいかないので、シンボリックリンク方式に変更。<br />
+<br />
+今作業してるフォルダーが<br />
+<pre class="brush: shell">
+/Users/xxxx/Sites/admin
+</pre>
+だとしたら、あらかじめ Dropbox フォルダー内にも Sites を作っておいて、<br />
+<pre class="brush: shell">
+ln -s /Users/xxxx/Sites/admin /Users/xxxx/Dropbox/Sites
+</pre>
+で、OK。<br />
+作った途端に、勝手に中のファイルが保存されてくれる。<br />
+Finderからファイルの情報を見ると、<br />
+<pre class="brush: shell">
+種類：エイリアス
+</pre>
+と表示されている。<br />
+ちなみに作ったシンボリックリンクの一覧が見たければ<br />
+<pre class="brush: shell">
+find ./Dropbox/Sites/ -type l
+</pre>
+とすればいい。消すときは<br />
+<pre class="brush: shell">
+rm Dropbox/Sites/admin
+</pre>
+こりゃーいい。<br />
+しかしなあ、常に同期してるってことは、間違って消してしまったら Dropbox からも消えてしまうってことではないか？<br />
+つまり、結局は全部消えるんでしょ、と。<br />
+思ってやってみたところ、確かに消えますね。Dropbox から削除される。<br />
+削除されるけれども、Dropbox は「削除済みファイルの復元」というのができる。<br />
+やってみる。<br />
+復元すると、シンボリックリンクは消滅し、削除されたファイルが再び現れる。<br />
+そしてそれはシンボリックリンクではなく、実体なのである。

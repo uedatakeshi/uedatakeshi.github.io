@@ -1,0 +1,159 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(20) Authコンポーネント
+date: '2011-10-03T21:07:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:05:24.776+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8276664026504693855
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/10/cakephp1320.html
+---
+
+<h1>Authコンポーネント</h1>
+
+<p>管理者側のアカウント管理(users)にいきます。<br />
+users_controller.php を開いて、アクションの add とadmin用のアクションを残して、他のアクションを削除します。<br />
+要らないので。<br />
+$helpers に ‘Javascript’ を追加します。</p>
+<pre class="brush: php">
+&lt;?php
+class UsersController extends AppController {
+
+    var $name = 'Users';
+    var $helpers = array('Javascript');
+</pre>
+
+
+<p>さらにその下に、
+<pre class="brush: php">
+    function beforeFilter() {
+        parent::beforeFilter();
+        $this-&gt;Auth-&gt;allow('add');
+    }
+</pre>
+を追加します。</p>
+<p>これは、アクションaddだけはAuthコンポーネントの認証から除外するって意味です。<br />
+なにしろまだアカウントを作っていないのに、Authコンポーネントで認証をかけてしまったら、誰も管理者画面にログインできなくなってしまいます。<br />
+かといってコンポーネント Auth を使う設定にしないで新規アカウントを登録しても、パスワードはplainなままで登録されてしまい、その後で Auth をかけても使えません。<br />
+次に、直下の app_controller.php を開いて、 $components に ‘Auth’ を追加します。</p>
+<pre class="brush: php">
+class AppController extends Controller {
+
+    var $components = array(
+        'Auth',
+        'Session', 
+        'Email' =&gt; array(
+            'from' =&gt; 'your@email',
+            'sendAs' =&gt; 'text',
+        ),
+    );
+</pre>
+
+<p>この状態で、ブラウザから、
+http://localhost/~myname/cake/users/add
+を開いて、一人目のアカウント（管理担当者）を登録します。</p>
+<p>エラーが出ますが、
+<pre class="brush: shell">
+The user has been saved
+</pre>
+のメッセージが表示されていると思います。</p>
+<p>データベースを直接のぞいて、パスワードが暗号化されているのを確認します。</p>
+<pre class="brush: sql">
+SELECT * FROM users;
+</pre>
+<p>以降、管理者画面へはこの一人目のアカウントでログインします。<br />
+アクションの add はもう削除してしまって構いません。<br />
+アカウントは出来たので、ログイン用の画面を作ります。ビューで、<br />
+/views/users/admin_login.ctp として、
+<pre class="brush: php">
+&lt;?php echo $this-&gt;Session-&gt;flash('auth'); ?&gt;
+&lt;div class="users form"&gt;
+&lt;?php echo $this-&gt;Form-&gt;create('User', array('action' =&gt; 'login'));?&gt;
+
+    &lt;h2&gt;&lt;?php __('ログイン'); ?&gt;&lt;/h2&gt;
+    &lt;?php
+        echo $this-&gt;Form-&gt;input('username',array('label' =&gt; array('text'=&gt;'ユーザー名')));
+        echo $this-&gt;Form-&gt;input('password',array('label' =&gt; array('text'=&gt;'パスワード')));
+    ?&gt;
+    &lt;?php echo $this-&gt;Form-&gt;end(__('ログイン', true));?&gt;
+&lt;/div&gt;
+</pre>
+
+上記のような画面を作ります。</p>
+<p>で、usersコントローラに以下のアクションを追加します。</p>
+<pre class="brush: php">
+    function admin_login() {
+    }
+</pre>
+<p>
+ブラウザからともかくなにかの admin のアドレス、例えば<br />
+http://localhost/~bob/cake/index.php/admin/users/<br />
+とかを入れて、ともかくもログイン画面が表示されることを確認します。<br />
+そして作った一人目のアカウントでログインできることを確認します。<br />
+さらに、ログアウトを追加します。</p>
+<pre class="brush: php">
+    function admin_logout() {
+        $this-&gt;redirect($this-&gt;Auth-&gt;logout());
+    }
+</pre>
+<p>
+こちらでログアウトできることを確認します。<br />
+とりあえず動かしてみて、エラーメッセージが英語なのが気になりますよね。<br />
+そこで、直下の app_controller.php を開いて、beforeFilter の中に以下を追加します。</p>
+<pre class="brush: php">
+        $this-&gt;Auth-&gt;loginError = "ユーザー名もしくはパスワードが正しくありません";
+        $this-&gt;Auth-&gt;authError = "ログインしてください";
+</pre>
+<p>これで日本語になると思います。<br />
+ついでに、ログインした時に今ログインしているアカウント名を常に左メニューの上の方に表示したいので、 set しておきます。<br />
+以下を直下の app_controller.php の function beforeFilter() { } の中に追加</p>
+<pre class="brush: php">
+        $this-&gt;set('loginName', $this-&gt;Auth-&gt;user('username'));
+</pre>
+
+<p>そして、レイアウトの /app/views/layouts/admin.ctp を開いて、div id=”menu” の下に一行追加します。</p>
+<pre class="brush: php">
+            &lt;div class="actions"&gt;
+                &lt;h3&gt;&lt;?php __('メニュー'); ?&gt;&lt;/h3&gt;
+                &lt;p&gt;&lt;?php echo $loginName; ?&gt;でログイン中&lt;/p&gt;
+                &lt;ul&gt;
+</pre>
+
+<p>ブラウザで開いてみて、ログイン中のアカウントの名前が表示されていることを確認します。<br />
+あと、ログイン画面のレイアウトが admin 用のもので、左メニューがあっておかしいので、左メニューのないレイアウトに変更します。<br />
+コントローラ users_controller.php を開いて、admin_login アクションに
+<pre class="brush: php">
+$this-&gt;layout = 'no_menu';
+</pre>
+
+を追加します。</p>
+<p>で、
+<pre class="brush: shell">
+/admin/users/add
+</pre>
+こんなアドレスを直接叩くと、
+<pre class="brush: shell">
+/admin/users/login
+</pre>
+ログイン画面にとばされる訳ですが、そのログイン画面からログインすると、ログイン後は
+<pre class="brush: shell">
+/admin/users/add
+</pre>
+に飛んでくれるようになっています。
+
+で、最初に作った公開側の会員登録画面を見てみると、こちらにもAuthコンポーネントが適用されて大変なことになってしまっているので、除外設定を行います。member_controller.php の最初に以下を追加します。</p>
+<pre class="brush: php">
+    function beforeFilter() {
+        parent::beforeFilter();
+        $this-&gt;Auth-&gt;allow('add','complete', 'login', 'logout', 'menu', 'edit', 'leave');
+    }
+</pre>
+<p>
+allow のところに除外するアクションを列挙するだけです。<br />
+ついでに、member_controller.php から、公開側の index() とか view() とか、使わないアクションを削除しておきます。</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1321.html">>>次のページ「アカウント管理」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1319.html">&lt;&lt;前のページ「退会処理」へ</a></li>
+</ul>

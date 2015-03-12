@@ -1,0 +1,99 @@
+---
+layout: post
+title: OSX で MacPorts を使って、CoffeeScript を試してみる
+date: '2011-09-03T11:00:00.006+09:00'
+author: 上田 剛
+tags:
+- Javascript
+- port
+modified_time: '2011-09-03T11:56:10.532+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1305933864229123862
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/osx-macports-coffeescript.html
+---
+
+WEB+DB PRESS Vol.64 の記事で面白そうだったので早速試してみた。<br />
+記事では CoffeeScript のコンパイラをインストールするのに、まず Node.js と npm が必要とあり、<br />
+その Node.js のインストールには nvm を使ってみる、とあるが、面倒なので port でやってみる。<br />
+<pre class="brush: shell">
+$ port search node*
+</pre>
+とすると、以下の４つが見つかるので、<br />
+<pre class="brush: shell">
+nodejs @0.4.11 (devel, net)
+    Evented I/O for V8 JavaScript
+
+nodejs-devel @0.5.4 (devel, net)
+    Evented I/O for V8 JavaScript
+
+nodejuice @1.5.0 (www)
+    A web development tool to autorefesh the browser on changes.
+
+npm @1.0.26 (devel)
+    node package manager
+
+Found 4 ports.
+</pre>
+
+<pre class="brush: shell">
+$ sudo port install nodejs
+</pre>
+<pre class="brush: shell">
+$ sudo port install npm
+</pre>
+でよさそうだ。<br />
+が、<br />
+<pre class="brush: shell">
+$ port search coffee*
+</pre>
+とすると、<br />
+<pre class="brush: shell">
+coffee-script @1.1.2 (lang)
+    a language that compiles into JavaScript
+</pre>
+こう出るので、もしかすると<br />
+<pre class="brush: shell">
+$ sudo port install coffee-script
+</pre>
+だけでもよかったのかもしれない。いずれにしろ、これで<br />
+<pre class="brush: shell">
+$ coffee -v
+CoffeeScript version 1.1.2
+</pre>
+というように入ったので、記事の通りに<br />
+<pre class="brush: js">
+hello = ->
+  console.log "Hello, World!"
+
+hello()
+</pre>
+を hello.coffee として保存し、<br />
+<br />
+コンパイル。<br />
+<pre class="brush: shell">
+$ coffee -c hello.coffee 
+</pre>
+Node.js から実行。<br />
+<pre class="brush: shell">
+$ node hello.js
+Hello, World!
+</pre>
+CoffeeScript から直接実行。<br />
+<pre class="brush: shell">
+$ coffee hello.coffee 
+Hello, World!
+</pre>
+生成された js ファイルは、<br />
+<pre class="brush: js">
+(function() {
+  var hello;
+  hello = function() {
+    return console.log("Hello, World!");
+  };
+  hello();
+}).call(this);
+</pre>
+となっている。<br />
+うまくいったようだ。<br />
+<a href="http://www.amazon.co.jp/gp/product/477414763X/ref=as_li_ss_il?ie=UTF8&tag=ammonite-22&linkCode=as2&camp=247&creative=7399&creativeASIN=477414763X"><img border="0" src="http://ws.assoc-amazon.jp/widgets/q?_encoding=UTF8&Format=_SL110_&ASIN=477414763X&MarketPlace=JP&ID=AsinImage&WS=1&tag=ammonite-22&ServiceVersion=20070822" ></a><img src="http://www.assoc-amazon.jp/e/ir?t=&l=as2&o=9&a=477414763X" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
+<a href="http://www.amazon.co.jp/gp/product/477414763X/ref=as_li_ss_tl?ie=UTF8&tag=ammonite-22&linkCode=as2&camp=247&creative=7399&creativeASIN=477414763X">WEB+DB PRESS Vol.64</a><img src="http://www.assoc-amazon.jp/e/ir?t=&l=as2&o=9&a=477414763X" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
+<br />

@@ -1,0 +1,72 @@
+---
+layout: post
+title: ２つのsubmitボタンを横にまっすぐ並べる方法
+date: '2010-03-14T05:36:00.015+09:00'
+author: 上田 剛
+tags:
+- html
+- css
+modified_time: '2010-03-14T06:09:52.893+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1588226292587925258
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/03/submit.html
+---
+
+まあ、よくある話なんですが、問い合わせフォームみたいなもので以下のようなボタンが２つ並んだソースがデザイナーさんから送られてきたりする訳です。<br />
+<pre class="brush: html">
+&lt;div class="controls"&gt;
+    &lt;input type="button" value="戻る" /&gt;
+    &lt;input type="submit" value="送信" /&gt;
+&lt;/div>
+</pre>
+<br />
+まあ、これはこれでそのままでもちゃんと横に並んでくれるし、普通はcssでセンタリングしてあったり、多少マージンがとってあったり、ひどいのになると、ボタンとボタンの間に全角スペース入れてそれで間隔を調整してたり(笑)、そんな感じだと思います。<br />
+ただ実際プログラムを入れていくと、これでは用をなさないわけで、以下のようなソースにしたいという場合が多々あります。<br />
+<pre class="brush: html">
+&lt;div class="controls"&gt;
+    &lt;form action="form.php" method="post"&gt;
+        &lt;fieldset&gt;
+            &lt;input type="hidden" name="mode" value="back" /&gt;
+            &lt;input type="submit" value="戻る" /&gt;
+        &lt;/fieldset&gt;
+    &lt;/form&gt;
+    &lt;form action="form.php" method="post"&gt;
+        &lt;fieldset&gt;
+            &lt;input type="hidden" name="mode" value="send" /&gt;
+            &lt;input type="submit" value="送信" /&gt;
+        &lt;/fieldset&gt;
+    &lt;/form&gt;
+&lt;/div&gt;
+</pre>
+「戻る」時と「送信」する時とでモードを切り替えて処理したいような場合ですね。<br />
+これの見た目はこうなってしまいます。<br />
+<div class="controls">
+<form action="form.php" method="post">
+<fieldset>
+<input name="mode" type="hidden" value="back" />
+<input type="submit" value="戻る" /></fieldset>
+</form>
+<form action="form.php" method="post">
+<fieldset>
+<input name="mode" type="hidden" value="send" />
+<input type="submit" value="送信" /></fieldset>
+</form>
+</div>
+
+<br />
+で、こういう時どうしたら、簡単に直せるか、ということですね。<br />
+まずこれはどうみてもformとfieldsetがブロック要素で右端まで行っちゃってるので、<br />
+<pre class="brush: css">form, fieldset {
+    display: inline;
+    border: none;
+}
+</pre>
+<br />
+とします。あとは適当にマージンとかを調整します。<br />
+<pre class="brush: css">form, fieldset {
+    display: inline;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+}
+</pre><br />
+一応、デザインさんに修正依頼する時間もない時のために。<br />

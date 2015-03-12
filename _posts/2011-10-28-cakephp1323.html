@@ -1,0 +1,188 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(23) 検索とPagination
+date: '2011-10-28T06:36:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:04:31.563+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-6122180233877099704
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/10/cakephp1323.html
+---
+
+<h1>検索とPagination</h1>
+
+<p>で、検索しつつ Pagination する部分ですが、ちょっとややこしくて、一気に全部書くと訳が分からないので、仮にメールアドレスだけで検索する場合を最初に考えます。<br />
+普通に「検索」ボタンで検索した場合は</p>
+<pre class="brush: php">
+$this->data['Member']['email']
+</pre>
+<p>に値が渡ってきます。<br />
+一方 paginate で次へ、とかページ数をクリックした場合は、</p>
+<pre class="brush: php">
+$this->passedArgs['email']
+</pre>
+<p>に値が渡ってきます。<br />
+これをふまえて考えると、<br />
+まず、ボタンかリンクかで判別して渡ってきた値を変数に入れます。</p>
+<pre class="brush: php">
+if (!empty($this->data)) {
+    $email = $this->data['Member']['email'];
+} else {
+    $email = urldecode($this->passedArgs['email']);
+}
+</pre>
+
+<p>ボタンできた場合はいいですが、リンクで来た場合は$this->data['Member']に値が入っていないので、入れ直します。</p>
+<pre class="brush: php">
+if (isset($email)) {
+    $this->data['Member']['email'] = $email;
+}
+</pre>
+
+<p>前回ビューで作った、peginator に検索キーワードを渡すためのオプションに値を設定します。</p>
+<pre class="brush: php">
+$searchword = array(
+    "email" => urlencode("$email"),
+);
+</pre>
+
+<p>検索のクエリーの条件をセットします。</p>
+<pre class="brush: php">
+$conditions = array("Member.email LIKE" => "%$email%");
+</pre>
+
+<p>条件を使って検索してビューに渡します。</p>
+<pre class="brush: php">
+$data = $this->paginate('Member', $conditions);
+$this->set('searchword', $searchword);
+$this->set("members", $data);
+</pre>
+
+<p>基本的にはこの流れでいきます。<br />
+やっかいなのは日付データです。年月日を分割したり、結合したり、しないといけません。<br />
+ボタンから来た時は年月日の配列になってるので、そのまま入れて、リンクから来た時は文字列になってるのでsplitしたものを配列に入れます。</p>
+<pre class="brush: php">
+if (!empty($this->data)) {
+    $f = $this->data['Member']['from'];
+    $t = $this->data['Member']['to'];
+} else {
+    list($f['year'], $f['month'], $f['day']) = preg_split("/-/", $this->passedArgs['from']);
+    list($t['year'], $t['month'], $t['day']) = preg_split("/-/", $this->passedArgs['to']);
+}
+</pre>
+
+<p>同じように $this->data に戻しておきます。</p>
+<pre class="brush: php">
+$this->data['Member']['from'] = $f;
+$this->data['Member']['to'] = $t;
+</pre>
+
+<p>conditions や searchword 用には結合したものを使います。</p>
+<pre class="brush: php">
+$from = $f['year']."-".$f['month']."-".$f['day'];
+$to = $t['year']."-".$t['month']."-".$t['day'];
+</pre>
+
+<p>こんな感じになります。</p>
+<pre class="brush: php">
+$searchword = array(
+    "from" => urlencode("$from"),
+    "to" => urlencode("$to"),
+);
+$conditions = array("Member.created BETWEEN ? AND ?" => array($from,$to));
+</pre>
+
+<p>で、存在しない日付とかを入れると思いっきりエラーになるので、日付データのチェックを別途 function を作って入れておきます。<br />
+こんな感じで。</p>
+<pre class="brush: php">
+    function _from_to_check($f, $t) {
+        if (!preg_match("/^[0-9]{4}$/", $f['year'])) {return false;}
+        if (!preg_match("/^[0-9]{2}$/", $f['month'])) {return false;}
+        if (!preg_match("/^[0-9]{2}$/", $f['day'])) {return false;}
+        if (!preg_match("/^[0-9]{4}$/", $t['year'])) {return false;}
+        if (!preg_match("/^[0-9]{2}$/", $t['month'])) {return false;}
+        if (!preg_match("/^[0-9]{2}$/", $t['day'])) {return false;}
+        if (!checkdate($f['month'], $f['day'], $f['year'])) {return false;}
+        if (!checkdate($t['month'], $t['day'], $t['year'])) {return false;}
+         
+        return true;
+    }
+</pre>
+
+
+<p>ここまでを整理するとこうなります。</p>
+<pre class="brush: php">
+    function admin_search() {
+        $this->Member->recursive = 0;
+
+        if (!empty($this->data)) {
+            $f = $this->data['Member']['from'];
+            $t = $this->data['Member']['to'];
+            $email = $this->data['Member']['email'];
+            $type_id = $this->data['Member']['type_id'];
+        }else{
+            foreach ($this->passedArgs as $k => $v){
+                if ($k == 'from'){
+                    list($f['year'], $f['month'], $f['day']) = preg_split("/-/", $v);
+                }elseif($k == 'to'){
+                    list($t['year'], $t['month'], $t['day']) = preg_split("/-/", $v);
+                }elseif($k == 'email'){
+                    $email = urldecode($v);
+                }elseif($k == 'type_id'){
+                    $type_id = urldecode($v);
+                }
+            }
+        }
+     
+        if (isset($f) && isset($t)){
+            if ($this->_from_to_check($f, $t)) {
+                $from = $f['year']."-".$f['month']."-".$f['day'];
+                $to = $t['year']."-".$t['month']."-".$t['day'];
+                $this->data['Member']['from'] = $f;
+                $this->data['Member']['to'] = $t;
+            }
+        }
+        if(isset($email)){
+            $this->data['Member']['email'] = $email;
+        }
+        if(isset($type_id)){
+            $this->data['Member']['type_id'] = $type_id;
+        }
+     
+        $searchword = array();
+        $conditions = array();
+        if (isset($from) && isset($to)){
+            $searchword = array(
+                "from" => urlencode($from),
+                "to" => urlencode($to),
+            );
+            $conditions = array("Member.created BETWEEN ? AND ?" => array($from,$to));
+        }
+        if (isset($email) && $email){
+            $searchword = $searchword + array(
+                "email" => urlencode("$email"),
+            );
+            $conditions = $conditions + array("Member.email LIKE" => "%$email%");
+        }
+        if (isset($type_id) && $type_id){
+            $searchword = $searchword + array(
+                "type_id" => urlencode("$type_id"),
+            );
+            $conditions = $conditions + array("Member.type_id" => "$type_id");
+        }
+     
+        $data = $this->paginate('Member', $conditions);
+        $this->set('searchword', $searchword);
+        $this->set("members", $data);
+         
+        $favorites = $this->Member->Favorite->find('list');
+        $types = $this->Member->Type->find('list');
+        $this->set(compact('favorites','types'));
+    }
+</pre>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/11/cakephp1324.html">>>次のページ「検索とPaginationとHABTM」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1322.html">&lt;&lt;前のページ「会員一覧と会員検索」へ</a></li>
+</ul>

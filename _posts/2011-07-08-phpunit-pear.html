@@ -1,0 +1,85 @@
+---
+layout: post
+title: 本当に phpunit なんて要るのか？ pear なんて大っきらい編
+date: '2011-07-08T19:11:00.000+09:00'
+author: 上田 剛
+tags:
+- php
+- pear
+modified_time: '2011-07-08T19:12:15.688+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-6572677333414442302
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/07/phpunit-pear.html
+---
+
+本当に要る。ということなので、インストールを試みる。<br />
+<br />
+PHPUnit Manual <br />
+第3章 PHPUnit のインストール<br />
+<a href="http://www.phpunit.de/manual/3.6/ja/installation.html">http://www.phpunit.de/manual/3.6/ja/installation.html</a><br />
+<br />
+とりあえずこちらに書いてある通り<br />
+以下の３つをチャンネルに追加。<br />
+<br />
+<pre class="brush: shell">
+pear channel-discover pear.phpunit.de
+pear channel-discover components.ez.no
+pear channel-discover pear.symfony-project.com
+</pre>
+sudo でないとエラーになったのでこうなった。<br />
+<pre class="brush: shell">
+$ sudo pear channel-discover pear.phpunit.de
+Adding Channel "pear.phpunit.de" succeeded
+Discovery of channel "pear.phpunit.de" succeeded
+
+$ sudo pear channel-discover components.ez.no
+Adding Channel "components.ez.no" succeeded
+Discovery of channel "components.ez.no" succeeded
+
+$ sudo pear channel-discover pear.symfony-project.com
+Adding Channel "pear.symfony-project.com" succeeded
+Discovery of channel "pear.symfony-project.com" succeeded
+</pre>
+自分のチャンネルのリストはこうやってみる。<br />
+<pre class="brush: shell">
+$ pear list-channels
+Registered Channels:
+====================
+Channel                  Alias   Summary
+components.ez.no         ezc     eZ Enterprise components
+doc.php.net              phpdocs PHP Documentation Team
+pear.php.net             pear    PHP Extension and Application
+                                 Repository
+pear.phpunit.de          phpunit PHPUnit PEAR Channel
+pear.symfony-project.com symfony The symfony project PEAR channel
+pecl.php.net             pecl    PHP Extension Community Library
+__uri                    __uri   Pseudo-channel for static packages
+</pre>
+で、いざ、<br />
+<pre class="brush: shell">
+$ sudo pear install phpunit/PHPUnit
+</pre>
+を実行してみると<br />
+<pre class="brush: shell">
+Failed to download pear/HTTP_Request2 within preferred state "stable", 
+latest release is version 2.0.0RC1, stability "beta", 
+use "channel://pear.php.net/HTTP_Request2-2.0.0RC1" to install
+</pre>
+というようなエラーが出る。<br />
+この use "channel://pear.php.net/HTTP_Request2-2.0.0RC1" to install<br />
+という一文が意味がわからなかったのだが、これはつまり、<br />
+<pre class="brush: shell">
+$ sudo pear install channel://pear.php.net/HTTP_Request2-2.0.0RC1
+</pre>
+こうしろってことらしい（笑）。<br />
+そうならそう書いてくれよって。<br />
+<br />
+ということで、結局、以下の順に実行して無事終了。<br />
+<pre class="brush: shell">
+$ sudo pear install channel://pear.php.net/Net_URL2-0.3.1
+$ sudo pear install channel://pear.php.net/HTTP_Request2-2.0.0RC1
+$ sudo pear install phpunit/PHPUnit
+</pre>
+<pre class="brush: shell">
+$ phpunit
+PHPUnit 3.5.14 by Sebastian Bergmann.
+</pre>

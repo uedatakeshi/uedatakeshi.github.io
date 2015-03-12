@@ -1,0 +1,217 @@
+---
+layout: post
+title: OS X Mountaion Lion で MacPorts を使って開発環境を整える(postgres編)
+date: '2012-08-19T01:00:00.000+09:00'
+author: 上田 剛
+tags:
+- port
+- php
+- Postgres
+modified_time: '2012-08-27T11:59:51.259+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-4186238986658620465
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/08/os-x-mountaion-lion-macports-postgres.html
+---
+
+<br />
+<h1>OS X Mountaion Lion で MacPorts を使って開発環境を整える(postgres編)</h1><br />
+まずは、<br />
+<br />
+<pre class="brush: shell">$ sudo port install postgresql90
+</pre><br />
+とすると終わり際に、<br />
+<br />
+<pre class="brush: shell">To use the postgresql server, install the postgresql90-server port
+</pre><br />
+と出るので、引き続き、<br />
+<br />
+<pre class="brush: shell">$ sudo port install postgresql90-server
+</pre><br />
+を実行。終わり際に、<br />
+<br />
+<pre class="brush: shell">###########################################################
+# A startup item has been generated that will aid in
+# starting postgresql90-server with launchd. It is disabled
+# by default. Execute the following command to start it,
+# and to cause it to launch at startup:
+#
+# sudo port load postgresql90-server
+###########################################################
+</pre><br />
+と、<br />
+<br />
+<pre class="brush: shell">To create a database instance, after install do
+ sudo mkdir -p /opt/local/var/db/postgresql90/defaultdb
+ sudo chown postgres:postgres /opt/local/var/db/postgresql90/defaultdb
+ sudo su postgres -c '/opt/local/lib/postgresql90/bin/initdb -D /opt/local/var/db/postgresql90/defaultdb'
+
+To tweak your DBMS, consider increasing kern.sysv.shmmax by adding an increased kern.sysv.shmmax .. to /etc/sysctl.conf
+</pre><br />
+が出る。<br />
+順番にやっていく。<br />
+<br />
+<pre class="brush: shell">$ sudo port load postgresql90-server
+$ sudo mkdir -p /opt/local/var/db/postgresql90/defaultdb
+$ sudo chown postgres:postgres /opt/local/var/db/postgresql90/defaultdb
+$ sudo su postgres -c '/opt/local/lib/postgresql90/bin/initdb -D /opt/local/var/db/postgresql90/defaultdb'
+</pre><br />
+ここで、だーっと出る。<br />
+<br />
+<pre class="brush: shell">The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale ja_JP.UTF-8.
+The default database encoding has accordingly been set to UTF8.
+initdb: could not find suitable text search configuration for locale ja_JP.UTF-8
+The default text search configuration will be set to "simple".
+
+fixing permissions on existing directory /opt/local/var/db/postgresql90/defaultdb ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 20
+selecting default shared_buffers ... 2400kB
+creating configuration files ... ok
+creating template1 database in /opt/local/var/db/postgresql90/defaultdb/base/1 ... ok
+initializing pg_authid ... ok
+initializing dependencies ... ok
+creating system views ... ok
+loading system objects' descriptions ... ok
+creating conversions ... ok
+creating dictionaries ... ok
+setting privileges on built-in objects ... ok
+creating information schema ... ok
+loading PL/pgSQL server-side language ... ok
+vacuuming database template1 ... ok
+copying template1 to template0 ... ok
+copying template1 to postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the -A option the
+next time you run initdb.
+
+Success. You can now start the database server using:
+
+    /opt/local/lib/postgresql90/bin/postgres -D /opt/local/var/db/postgresql90/defaultdb
+or
+    /opt/local/lib/postgresql90/bin/pg_ctl -D /opt/local/var/db/postgresql90/defaultdb -l logfile start
+</pre><br />
+最後のやつをやってみる。<br />
+<br />
+<pre class="brush: shell">$ /opt/local/lib/postgresql90/bin/postgres -D /opt/local/var/db/postgresql90/defaultdb
+</pre><br />
+エラーになる。<br />
+<br />
+<pre class="brush: shell">postgres cannot access the server configuration file "/opt/local/var/db/postgresql90/defaultdb/postgresql.conf": Permission denied
+</pre><br />
+パーミッションの問題か。<br />
+sudo su postgres して再トライ。<br />
+<br />
+<pre class="brush: shell">$ sudo su postgres
+$ /opt/local/lib/postgresql90/bin/postgres -D /opt/local/var/db/postgresql90/defaultdb
+LOG:  database system was shut down at 2012-08-11 04:10:00 JST
+LOG:  autovacuum launcher started
+LOG:  database system is ready to accept connections
+</pre><br />
+動いたっぽい。<br />
+<br />
+<pre class="brush: shell">$ /opt/local/lib/postgresql90/bin/psql -l -U postgres                              List of databases
+   Name    |  Owner   | Encoding | Collation | Ctype |   Access privileges  
+-----------+----------+----------+-----------+-------+-----------------------
+ postgres  | postgres | UTF8     | C         | C     |
+ template0 | postgres | UTF8     | C         | C     | =c/postgres          +
+           |          |          |           |       | postgres=CTc/postgres
+ template1 | postgres | UTF8     | C         | C     | =c/postgres          +
+           |          |          |           |       | postgres=CTc/postgres
+(3 rows)
+</pre><br />
+よさそうだ。<br />
+パスを通しておく。<br />
+<br />
+<pre class="brush: shell">$ vim .profile
+</pre><br />
+<pre class="brush: shell">export PATH=/opt/local/lib/postgresql90/bin:$PATH
+</pre><br />
+テスト用DBを作っておく。<br />
+<br />
+<pre class="brush: shell">$ createdb sample_db -U postgres -E UTF-8
+</pre><br />
+psqlして、<br />
+<br />
+<pre class="brush: shell">$ psql sample_db -U postgres
+</pre><br />
+テーブルを作る。<br />
+<br />
+<pre class="brush: shell">sample_db=# CREATE TABLE users (
+sample_db(# id SERIAL PRIMARY KEY,
+sample_db(# name varchar(255)
+sample_db(# );
+NOTICE:  CREATE TABLE will create implicit sequence "users_id_seq" for serial column "users.id"
+NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "users_pkey" for table "users"
+CREATE TABLE
+</pre><br />
+確認。<br />
+<br />
+<pre class="brush: shell">sample_db=# \d
+              List of relations
+ Schema |     Name     |   Type   |  Owner  
+--------+--------------+----------+----------
+ public | users        | table    | postgres
+ public | users_id_seq | sequence | postgres
+(2 rows)
+
+sample_db=# \d users
+                                 Table "public.users"
+ Column |          Type          |                     Modifiers                     
+--------+------------------------+----------------------------------------------------
+ id     | integer                | not null default nextval('users_id_seq'::regclass)
+ name   | character varying(255) |
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+</pre><br />
+データを入れておく。<br />
+<br />
+<pre class="brush: shell">sample_db=# INSERT INTO users (name) VALUES ('yamada');
+INSERT 0 1
+</pre><br />
+セレクトして確認。<br />
+<br />
+<pre class="brush: shell">sample_db=# select * from users;
+ id |  name 
+----+--------
+  1 | yamada
+(1 row)
+</pre><br />
+再びportでインストール<br />
+<br />
+<pre class="brush: shell">$ sudo port install php5-postgresql
+</pre><br />
+アパッチ再起動<br />
+<br />
+<pre class="brush: shell">$ sudo /opt/local/apache2/bin/apachectl restart
+</pre><br />
+infophp()で確認。<br />
+<br />
+簡単なphpを書いて接続テスト。<br />
+<br />
+<pre class="brush: php">&lt;?php
+$conn = pg_pconnect("dbname=sample_db user=postgres");
+if (!$conn) {
+  echo "An error occured.\n";
+  exit;
+}
+
+$result = pg_query($conn, "SELECT * FROM users");
+if (!$result) {
+  echo "An error occured.\n";
+  exit;
+}
+
+while ($row = pg_fetch_row($result)) {
+  echo "Id: $row[0]  Name: $row[1]";
+  echo "&lt;br /&gt;\n";
+}
+</pre><br />
+表示される。<br />
+<br />
+<pre class="brush: html">Id: 1 Name: yamada
+</pre><br />
+よさそうだ。<br />
+<br />

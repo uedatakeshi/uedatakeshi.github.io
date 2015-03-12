@@ -1,0 +1,74 @@
+---
+layout: post
+title: jQuery UIのTabsを使って切り替えるタブの中身のコンテンツ部分を別ファイルにしたい
+date: '2010-10-26T17:50:00.004+09:00'
+author: 上田 剛
+tags:
+- jQuery
+modified_time: '2010-10-26T17:54:38.687+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-7565971140882791430
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/10/jquery-uitabs.html
+---
+
+他にいいのがなくて仕方なく使ってるjQuery UIですが、一番よく使う、いや、使いたくなるのが、Tabsを使ったタブレイアウトですね。<br />
+デザイナーがぱぱぱっと作ってくれればいいんだけど、いないし。<br />
+ということでそのTabsですが、サンプルのソースを見ると、<br />
+こんな感じになっていて、<br />
+<pre class="brush: html">
+&lt;div id="tabs"&gt;
+  &lt;ul&gt;
+    &lt;li&gt;&lt;a href="#tabs-1"&gt;メニュー１&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#tabs-2"&gt;メニュー２&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#tabs-3"&gt;メニュー３&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;div id="tabs-1"&gt;
+    &lt;p&gt;一個目&lt;/p&gt;
+  &lt;/div&gt;
+  &lt;div id="tabs-2"&gt;
+    &lt;p&gt;2個目&lt;/p&gt;
+  &lt;/div&gt;
+  &lt;div id="tabs-3"&gt;
+    &lt;p&gt;3個目&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</pre>
+切り替えるコンテンツの中身も全部同じ一個のファイル（テンプレ）に書く、それを出したり、隠したりする、ということになっている。<br />
+中身がちょびっとだったらいいけれども、量が多いとソース書く時に長くなるし、見づらくなるし、分割したい訳です！<br />
+別ファイルに。<br />
+<br />
+ということで考えてみたんだが、、<br />
+HTMLの方は、<br />
+<pre class="brush: html">
+&lt;div id="tabs"&gt;
+  &lt;ul&gt;
+    &lt;li&gt;&lt;a href="#tabs-1"&gt;メニュー１&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#tabs-2"&gt;メニュー２&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#tabs-3"&gt;メニュー３&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;div id="tabs-1"&gt;
+  &lt;/div&gt;
+  &lt;div id="tabs-2"&gt;
+  &lt;/div&gt;
+  &lt;div id="tabs-3"&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</pre>
+コンテンツ部分を空っぽにしておいて、<br />
+<pre class="brush: js">
+$("#tabs").tabs({
+  select: function(event, ui) {
+    if (ui.index == 0) {
+      $(ui.panel).load('index.php');
+    }
+    else if (ui.index == 1) {
+      $(ui.panel).load('menu.php');
+    }
+    else if (ui.index == 2) {
+      $(ui.panel).load('user.php');
+    }
+  }
+});
+</pre>
+とするのはどうだろうか。<br />
+もちろん、.load() で呼び出すindex.phpとかには&lt;div&gt;の間に入る内容を出力させます。<br />
+もっといい方法ありますか？<br />

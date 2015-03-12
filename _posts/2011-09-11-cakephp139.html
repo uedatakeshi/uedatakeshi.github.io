@@ -1,0 +1,161 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(9) レイアウトその1
+date: '2011-09-11T04:11:00.008+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:08:44.687+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5076533669485490584
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp139.html
+---
+
+<h1>レイアウトその1</h1>
+
+<p>で、ついでなので管理画面っぽく、レフトメニューがあって作業を選べるようなページレイアウトに変更します。</p>
+<p>
+/cake/libs/view/layouts/default.ctp がもともとのレイアウトファイルなので、これを開いて参考にしながら、自分の admin 用のレイアウト admin.ctp を作ります。
+それは /app/views/layouts に保存します。
+</p>
+<pre class="brush: shell">
+/app/views/layouts/admin.ctp
+</pre>
+<p>
+今まで add.ctp などをいじってきて気がついていると思いますが、フォームなどのメイン部分の下に、左メニュー部分が Actions として入っています。</p>
+<p>
+つまり全体としては、こんな構造になっていて、
+<pre class="brush: html">
+&lt;div id="header"&gt;&lt;/div&gt;
+&lt;div id="content"&gt;
+    &lt;div class="members form"&gt;&lt;/div&gt;
+    &lt;div class="actions"&gt;&lt;/div&gt;
+&lt;/div&gt;
+<div id="footer"></div>
+</pre>
+各ページのテンプレート（$content_for_layout の中に入る部分）が、
+<pre class="brush: html">
+    &lt;div class="members form"&gt;&lt;/div&gt;
+    &lt;div class="actions"&gt;&lt;/div&gt;
+</pre>
+になっている、という訳です。</p>
+<p>ということで、このactionsを分離して、レイアウトの方に入れてしまいます。</p>
+<p>
+add.ctp から
+<pre class="brush: php;">
+&lt;div class="actions"&gt;
+ &lt;h3&gt;&lt;?php __('Actions'); ?&gt;&lt;/h3&gt;
+ &lt;ul&gt;
+
+  &lt;li&gt;&lt;?php echo $this->Html->link(__('List Members', true), array('action' => 'index'));?&gt;&lt;/li&gt;
+  &lt;li>&lt;?php echo $this->Html->link(__('List Types', true), array('controller' => 'types', 'action' => 'index')); ?&gt; &lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this->Html->link(__('New Type', true), array('controller' => 'types', 'action' => 'add')); ?&gt; &lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this->Html->link(__('List Favorites', true), array('controller' => 'favorites', 'action' => 'index')); ?&gt; &lt;/li&gt;
+  &lt;li&gt;&lt;?php echo $this->Html->link(__('New Favorite', true), array('controller' => 'favorites', 'action' => 'add')); ?&gt; &lt;/li&gt;
+ &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
+この部分をカットし、admin.ctp (もともとはdefault.ctp)の $content_for_layout の下ににコピーします。</p>
+<pre class="brush: php; highlight: [47,48,49,50,51,52,53,54,55,56]">
+&lt;?php
+/**
+ *
+ * PHP versions 4 and 5
+ *
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ *
+ * Licensed under The MIT License
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright     Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
+ * @package       cake
+ * @subpackage    cake.cake.libs.view.templates.layouts
+ * @since         CakePHP(tm) v 0.10.0.1076
+ * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
+ */
+?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml"&gt;
+&lt;head&gt;
+ &lt;?php echo $this-&gt;Html-&gt;charset(); ?&gt;
+ &lt;title&gt;
+  &lt;?php __('CakePHP: the rapid development php framework:'); ?&gt;
+  &lt;?php echo $title_for_layout; ?&gt;
+ &lt;/title&gt;
+ &lt;?php
+  echo $this-&gt;Html-&gt;meta('icon');
+
+  echo $this-&gt;Html-&gt;css('cake.generic');
+
+  echo $scripts_for_layout;
+ ?&gt;
+&lt;/head&gt;
+&lt;body&gt;
+ &lt;div id="container"&gt;
+  &lt;div id="header"&gt;
+   &lt;h1&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('CakePHP: the rapid development php framework', true), 'http://cakephp.org'); ?&gt;&lt;/h1&gt;
+  &lt;/div&gt;
+  &lt;div id="content"&gt;
+
+   &lt;?php echo $this-&gt;Session-&gt;flash(); ?&gt;
+
+   &lt;?php echo $content_for_layout; ?&gt;
+
+   &lt;div class="actions"&gt;
+    &lt;h3&gt;&lt;?php __('Actions'); ?&gt;&lt;/h3&gt;
+    &lt;ul&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('List Members', true), array('action' =&gt; 'index'));?&gt;&lt;/li&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('List Types', true), array('controller' =&gt; 'types', 'action' =&gt; 'index')); ?&gt; &lt;/li&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('New Type', true), array('controller' =&gt; 'types', 'action' =&gt; 'add')); ?&gt; &lt;/li&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('List Favorites', true), array('controller' =&gt; 'favorites', 'action' =&gt; 'index')); ?&gt; &lt;/li&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('New Favorite', true), array('controller' =&gt; 'favorites', 'action' =&gt; 'add')); ?&gt; &lt;/li&gt;
+    &lt;/ul&gt;
+   &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div id="footer"&gt;
+   &lt;?php echo $this-&gt;Html-&gt;link(
+     $this-&gt;Html-&gt;image('cake.power.gif', array('alt'=&gt; __('CakePHP: the rapid development php framework', true), 'border' =&gt; '0')),
+     'http://www.cakephp.org/',
+     array('target' =&gt; '_blank', 'escape' =&gt; false)
+    );
+   ?&gt;
+  &lt;/div&gt;
+ &lt;/div&gt;
+ &lt;?php echo $this-&gt;element('sql_dump'); ?&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+<p>こんな感じになります。</p>
+<p>そして、&lt;div class="actions"&gt; の中を書き換えます。</p>
+<pre class="brush: php">
+   &lt;div class="actions"&gt;
+    &lt;h3&gt;&lt;?php __('メニュー'); ?&gt;&lt;/h3&gt;
+    &lt;ul&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('会員管理', true), array('controller'=&gt;'members','action' =&gt; 'index'));?&gt;&lt;/li&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('担当者アカウント管理', true), array('controller' =&gt; 'users', 'action' =&gt; 'index')); ?&gt; &lt;/li&gt;
+     &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('ログアウト', true), array('controller' =&gt; 'users', 'action' =&gt; 'logout')); ?&gt; &lt;/li&gt;
+    &lt;/ul&gt;
+   &lt;/div&gt;
+</pre>
+<p>
+で、一旦このレイアウトを確認します。 /app/controllers/members_controller.php を開いて、 var $name = 'Members'; の下に、
+<pre class="brush: php; highlight: [5,6,7]">
+class MembersController extends AppController {
+
+    var $name = 'Members';
+
+    function beforeFilter() {
+        $this->layout = 'admin';
+    }
+</pre>
+
+
+とレイアウトの指定を追加します。（上記5〜7行目）</p>
+
+<p>ブラウザで見てみます。</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-13-cakephp1310 %}">>>次のページ「レイアウトその2」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-11-cakephp138 %}">&lt;&lt;前のページ「フォームの見た目を変える」へ</a></li>
+</ul>

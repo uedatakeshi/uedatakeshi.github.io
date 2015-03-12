@@ -1,0 +1,181 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(21) アカウント管理
+date: '2011-10-27T06:47:00.003+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:05:07.225+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-107475338204855900
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/10/cakephp1321.html
+---
+
+<h1>アカウント管理</h1>
+
+<p>次に、アカウント管理を完成させます。<br />
+users_controller.php を開きます。</p>
+<p>アカウント管理画面のtitleタグに各ページのタイトルを入れるので、各アクションの冒頭に、
+<pre class="brush: php">
+        $this-&gt;set('title_for_layout', 'アカウント一覧');
+</pre>
+というように、タイトルを設定します。上記は admin_index の場合の例。</p>
+
+<p>次に一覧のビューを調整します。admin_index.ctp を開きます。<br />
+以下の paginator が全部出しでだるいので、</p>
+<pre class="brush: php">
+    &lt;p&gt;
+    &lt;?php
+    echo $this-&gt;Paginator-&gt;counter(array(
+    'format' =&gt; __('Page %page% of %pages%, showing %current% records out of %count% total, starting on record %start%, ending on %end%', true)
+    ));
+    ?&gt;    &lt;/p&gt;
+</pre>
+
+
+<p>以下のようにすっきりさせます（笑）。</p>
+<pre class="brush: php">
+    &lt;p&gt;
+    &lt;?php
+    echo $this-&gt;Paginator-&gt;counter(array(
+    'format' =&gt; __('全 %count% 件', true)
+    ));
+    ?&gt;    &lt;/p&gt;
+</pre>
+
+<p>パスワードの表示はいらないので</p>
+<pre class="brush: php">
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('password');?&gt;&lt;/th&gt;
+</pre>
+<p>と、</p>
+<pre class="brush: php">
+        &lt;td&gt;&lt;?php echo $user['User']['password']; ?&gt;&nbsp;&lt;/td&gt;
+</pre>
+<p>を削除します。<br />
+最初に登録した管理者を削除されてしまうとどうにもならないので</p>
+<pre class="brush: php">
+            &lt;?php echo $this-&gt;Html-&gt;link(__('Delete', true), array('action' =&gt; 'delete', $user['User']['id']), null, sprintf(__('Are you sure you want to delete # %s?', true), $user['User']['id'])); ?&gt;
+</pre>
+
+<p>こうなっているところに、if ($user['User']['id'] != 1){} をつけておきます。</p>
+<pre class="brush: php">
+            &lt;?php 
+                if ($user['User']['id'] != 1) {
+                    echo $this-&gt;Html-&gt;link(__('Delete', true), array('action' =&gt; 'delete', $user['User']['id']), null, sprintf(__('Are you sure you want to delete # %s?', true), $user['User']['id']));
+                }
+            ?&gt;
+</pre>
+
+<p>気休めでしかないですけどね。操作ミスを防ぐだけの目的であれば十分でしょう。<br />
+アカウントの新規登録へ進みます。
+admin_add.ctp を開いて、例によって</p>
+<pre class="brush: php">
+&lt;?php echo $javascript-&gt;link(array('jquery','util'), false); ?&gt;
+</pre>
+
+<p>を追加し、</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('password');
+</pre>
+
+<p>こうなっているのを</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('password', array('label' =&gt; 'パスワード', 'value'=&gt;''));
+        echo $this-&gt;Form-&gt;input('password_confirm', array('label' =&gt; 'パスワード（確認）', 'value'=&gt;''));
+</pre>
+
+<p>こうします。<br />
+一方、モデルの user.php に、validate のルールを追加します。<br />
+例によって、この中に書いていきます。</p>
+<pre class="brush: php">
+    var $validate = array(
+        'username' =&gt; array(
+            'notempty' =&gt; array(
+                'rule' =&gt; array('notempty'),
+                //'message' =&gt; 'Your custom message here',
+                //'allowEmpty' =&gt; false,
+                //'required' =&gt; false,
+                //'last' =&gt; false, // Stop validation after this rule
+                //'on' =&gt; 'create', // Limit validation to 'create' or 'update' operations
+            ),
+        ),
+        'password' =&gt; array(
+            'notempty' =&gt; array(
+                'rule' =&gt; array('notempty'),
+                //'message' =&gt; 'Your custom message here',
+                //'allowEmpty' =&gt; false,
+                //'required' =&gt; false,
+                //'last' =&gt; false, // Stop validation after this rule
+                //'on' =&gt; 'create', // Limit validation to 'create' or 'update' operations
+            ),
+        ),
+    );
+</pre>
+
+<p>まずログインID(ユーザー名）は、</p>
+<pre class="brush: php">
+        'username' =&gt; array(
+            "rule1" =&gt; array(
+                "rule" =&gt; 'isUnique',
+                "message" =&gt; "このユーザー名は既に登録されています",
+            ),
+            "rule2" =&gt; array(
+                "rule" =&gt; array("custom", '/^[a-zA-Z0-9\_\-]{6,10}$/i'),
+                "message" =&gt; "ユーザー名は6文字以上10文字以内で入力してください",
+            ),
+            'notempty' =&gt; array(
+                'rule' =&gt; array('notempty'),
+                'message' =&gt; 'ユーザー名を入力してください',
+            ),
+        ),
+</pre>
+
+
+<p>パスワードを入れたかどうか、一致してるか、は password_confirm の方でチェックします。</p>
+<pre class="brush: php">
+        'password_confirm' =&gt; array(
+            'rule1' =&gt; array(
+                'rule' =&gt; array('passwordConfirm'),
+                'message'=&gt;'パスワードの入力が一致しません',
+            ),
+            "rule2" =&gt; array(
+                "rule" =&gt; 'notEmpty',
+                "message" =&gt; "パスワードを入力してください",
+            ),
+        ),
+</pre>
+
+
+<p>上記の passwordConfirm はカスタムルールなので別途作ります。<br />
+password_confirm の方の入力を暗号化して、それと password の方が一致するかを確認します。<br />
+例の、Authコンポーネントが自動で暗号化してしまうことのためです。</p>
+<pre class="brush: php">
+    function passwordConfirm(){
+        if ($this-&gt;data['User']['password'] == Security::hash(Configure::read('Security.salt') . $this-&gt;data['User']['password_confirm'])) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+</pre>
+
+
+<p>ブラウザで動作テストします。他で入力エラー出すとパスワードの入力が消えてしまいますが、ま、よしとします。<br />
+引き続き admin_edit.ctp もビューを修正します。<br />
+パスワードのフォーム</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('password');
+</pre>
+
+<p>を以下に変えます</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('password', array('label' =&gt; 'パスワード', 'value'=&gt;''));
+        echo $this-&gt;Form-&gt;input('password_confirm', array('label' =&gt; 'パスワード（確認）', 'value'=&gt;''));
+</pre>
+<p>パスワードは編集の度に入れなくてはいけませんがこれもしょうがないでしょう。<br />
+ブラウザ動作テストします。<br />
+その他不要なメニューの削除やら、見出しやら、ビューの整形を行います。</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1322.html">>>次のページ「会員一覧と会員検索」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1320.html">&lt;&lt;前のページ「Authコンポーネント」へ</a></li>
+</ul>

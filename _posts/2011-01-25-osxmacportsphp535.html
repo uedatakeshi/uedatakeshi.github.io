@@ -1,0 +1,78 @@
+---
+layout: post
+title: OSXのMacPortsでphpのバージョンが5.3.5になり、なにもかもおかしくなった件
+date: '2011-01-25T12:01:00.000+09:00'
+author: 上田 剛
+tags:
+- OSX
+- port
+- php
+- apache
+modified_time: '2011-01-25T12:02:04.243+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1482577351669025033
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/01/osxmacportsphp535.html
+---
+
+前の記事を見たら2010/3/18ってなってたからおよそ一年近くほったらかしになっていたことになるが。<br />
+1年前に自宅のOSXの環境にMacPortsでphpを入れて、その時は5.3.2だったんだが、<br />
+それで昨日そいつを更新しようと思い立ち、<br />
+<pre class="brush: shell">
+sudo port upgrade installed
+</pre>
+とやったが最後、とんでもなく延々と待たされた挙げ句に<br />
+
+<pre class="brush: shell">
+ php5 @5.3.2_0+apache2+macosx+mysql5+pear+sockets+sqlite
+ php5 @5.3.5_0+apache2 (active)
+</pre>
+と２つのphp5が存在している状態になり、もう訳が分からない（涙）。<br />
+なんなんすか、これ。<br />
+phpのバージョンを5.3.2から5.3.5にするんだったら、<br />
+<pre class="brush: shell">
+ php5 @5.3.5_0+apache2+macosx+mysql5+pear+sockets+sqlite
+</pre>
+こうなるのが普通じゃないか？！<br />
+おかしい、これは絶対おかしい。<br />
+ということで<br />
+<pre class="brush: shell">
+sudo port uninstall -f php5 @5.3.5_0+apache2
+</pre>
+とやって消してみた。<br />
+消してからふと、そういえばmbstringが使えなかったような気がしたナーと思ったので<br />
+ついうっかり、<br />
+<pre class="brush: shell">
+sudo port install php5-mbstring
+</pre>
+とやってしまった。すると、<br />
+<pre class="brush: shell">
+ php5 @5.3.2_0+apache2+macosx+mysql5+pear+sockets+sqlite
+ php5 @5.3.5_0+apache2 (active)
+</pre>
+げげーっつまたしても5.3.5が復活している！！<br />
+さすがにここまでやって気がついた。<br />
+恐らくこれは5.3.2と5.3.5とでは、もう、違うってことだ。<br />
+これからはもう絶対に<br />
+<pre class="brush: shell">
+php5 @5.3.5_0+apache2+macosx+mysql5+pear+sockets+sqlite
+</pre>
+こういう風にはならないってことだ。<br />
+結果、<br />
+<pre class="brush: shell">
+php5 @5.3.5_0+apache2 (active)
+php5-mbstring @5.3.5_0 (active)
+php5-mysql @5.3.5_0+mysqlnd (active)
+</pre>
+こういう風になる。<br />
+ついでに泣けるのがこのmbstring入れる時に出るメッセージ<br />
+<pre class="brush: shell">
+Your php.ini contains a line that will prevent php5-mbstring
+and other PHP extensions from working. To fix this,
+edit /opt/local/etc/php5/php.ini and delete this line:
+
+extension_dir = "./"
+</pre>
+この行を消せってのは<br />
+<pre class="brush: shell">
+extension_dir = "./"
+</pre>
+のことを指している（笑）。<br />

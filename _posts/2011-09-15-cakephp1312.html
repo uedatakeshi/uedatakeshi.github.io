@@ -1,0 +1,104 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(12) 確認画面その2
+date: '2011-09-15T06:45:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:07:37.493+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-403547554987174637
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1312.html
+---
+
+<h1>確認画面その2</h1>
+
+<p>ではビューについて、順番に整理していきます。</p>
+<p>confirm.ctp から管理メニュー部分
+<pre class="brush: php">
+&lt;div class="actions"&gt;
+....
+&lt;/div&gt;
+</pre>
+で囲まれたところをざくっと削除します。いらないので。</p>
+<p>Birthday（誕生日）のところ、
+<pre class="brush: php">
+&lt;?php echo $member['Member']['birthday']; ?&gt;
+</pre>
+こうなっているのを、以下に変更します。</p>
+<pre class="brush: php">
+&lt;?php echo $member['Member']['birthday']['year'] .'/' . $member['Member']['birthday']['month'] .'/'. $member['Member']['birthday']['day']; ?&gt;
+</pre>
+<p>同じく “hidden” の Birthday 部分、
+<pre class="brush: php">
+echo $this->Form->input('birthday', array('type'=>'hidden'));
+</pre>
+これを以下に変更します。</p>
+<pre class="brush: php">
+echo $this->Form->input('birthday.year', array('type'=>'hidden'));
+echo $this->Form->input('birthday.month', array('type'=>'hidden'));
+echo $this->Form->input('birthday.day', array('type'=>'hidden'));
+</pre>
+<p>
+Type（会員種別） のところ、
+<pre class="brush: php">
+&lt;?php echo $this-&gt;Html-&gt;link($member['Type']['name'], array('controller' =&gt; 'types', 'action' =&gt; 'view', $member['Type']['id'])); ?&gt;
+</pre>
+こうなっているのを、以下に変更します。</p>
+<pre class="brush: php">
+&lt;?php echo $types[$member['Member']['type_id']]; ?&gt;
+</pre>
+<p>次に「好きな物」に関して、
+<pre class="brush: php">
+&lt;div class="related"&gt;
+....
+&lt;/div&gt;
+</pre>
+ではさまれたの関連テーブル部分をごっそり削除し、その代わりにメインのテーブルの Img2 の表示部分(tr で囲まれた一角)の下に以下を追加します。</p>
+<pre class="brush: php">
+  &lt;dt&lt;?php if ($i % 2 == 0) echo $class;?&gt;&gt;&lt;?php __('好きな物'); ?&gt;&lt;/dt&gt;
+  &lt;dd&lt;?php if ($i++ % 2 == 0) echo $class;?&gt;&gt;
+   &lt;?php if (!empty($member['Favorite']['Favorite'])):?&gt;
+   &lt;ul&gt;
+    &lt;?php foreach ($member['Favorite']['Favorite'] as $favorite): ?&gt;
+     &lt;li&gt;&lt;?php echo $favorites[$favorite['id']];?&gt;&lt;/li&gt;
+    &lt;?php endforeach; ?&gt;
+   &lt;/ul&gt;
+   &lt;?php endif; ?&gt;
+   &nbsp;
+  &lt;/dd&gt;
+</pre>
+
+<p>members_controller.php に戻って、 function add() の、一番下の
+<pre class="brush: php">
+  $types = $this->Member->Type->find('list');
+  $favorites = $this->Member->Favorite->find('list');
+  $this->set(compact('types', 'favorites'));
+</pre>
+
+３行を、一番上に持ってきます。</p>
+<p>こうなります。</p>
+<pre class="brush: php; highlight: [2,3,4]">
+ function add() {
+  $types = $this->Member->Type->find('list');
+  $favorites = $this->Member->Favorite->find('list');
+  $this->set(compact('types', 'favorites'));
+  
+  if (!empty($this->data)) {
+   if ($this->data['Member']['mode'] == 'confirm') {
+    $this->Member->set($this->data);
+</pre>
+
+<p>ブラウザで確認します。<br />
+ここまでで、Type（会員種別）、Birthday（誕生日）、好きな物 が表示されるようになったはずです。<br />
+ボタン「送信」をクリックで、一覧画面に戻り、<br />
+<pre class="brush: shell">
+The Member has been saved
+</pre>
+と表示されればOKです。membersテーブルのデータは保存されています。
+</p>
+
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-16-cakephp1313 %}">>>次のページ「checkbox、戻るボタン、年月セレクト、完了画面」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-14-cakephp1311 %}">&lt;&lt;前のページ「確認画面その1」へ</a></li>
+</ul>

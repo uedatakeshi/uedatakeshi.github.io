@@ -1,0 +1,240 @@
+---
+layout: post
+title: mysqli(MySQL 改良版拡張モジュール)を使う場合のサンプルいろいろ
+date: '2012-09-14T23:30:00.000+09:00'
+author: 上田 剛
+tags:
+- MySQL
+- php
+modified_time: '2012-09-14T23:30:01.334+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-7363359130692900002
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/09/mysqlimysql.html
+---
+
+<h1>mysqli(MySQL 改良版拡張モジュール)を使う場合のサンプルいろいろ</h1><br />
+いやあよもやね、mysql_real_escape_string とかが deprecated になる日がくるとは思わんかったね。<br />
+まずいでしょう、これは。まじで。<br />
+<br />
+<pre class="brush: php">error_reporting(0);
+</pre><br />
+にしとかないとあっという間にサーバーのログがパンクするんじゃないか・・・。<br />
+<br />
+ま、それはともかく、mysqli に書き換えないといけない。<br />
+いや、そもそも mysqli でいいのか？ PDO っつーのもあるぞ、って話なんだが。<br />
+<br />
+<b>俺は mysqli でいく。</b><br />
+<br />
+まずは接続。<br />
+<br />
+<pre class="brush: php">// データベース接続
+$dbh = new mysqli("localhost", "username", "password", "db_name");
+if ($dbh->connect_error) {
+    die('Db Connect Error: '.$dbh->connect_errno.':'.$dbh->connect_error);
+}
+$dbh->set_charset('utf8');
+</pre><br />
+id= で一個だけのデータをセレクトする。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "SELECT id, name FROM users WHERE id = ?";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('s', $id);
+    $id = '1';
+    $sth->execute();
+    $result = $sth->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        echo $row['id']."\n";
+        echo $row['name']."\n";
+    }
+    $sth->close();
+}
+</pre><br />
+同じsqlをセレクトする値を変えて複数回実行する。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "SELECT id, name FROM users WHERE id = ?";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('s', $id);
+    $id_array = array('1', '2');
+    foreach($id_array as $id) {
+        $sth->execute();
+        $result = $sth->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+            foreach($row as $k => $v) {
+                echo "$k $v";
+            }
+        }
+    }
+    $sth->close();
+}
+</pre><br />
+クエリの結果の行数を取得してなんかする。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "SELECT id, name FROM users";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->execute();
+    $sth->store_result();
+    if ($sth->num_rows == '3') {
+        $sth->bind_result($id, $name);
+        while ($sth->fetch()) {
+            echo "$id, $name\n";
+        }
+        printf("Number of rows: %d.\n", $sth->num_rows);
+    }
+    $sth->free_result();
+    $sth->close();
+}
+</pre><br />
+<br />
+クエリでINを使う。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "SELECT id, name FROM users WHERE id IN (?, ?)";
+if (! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $list = array('1','3');
+    $sth->bind_param('ii', $list[0], $list[1]);
+    $sth->execute();
+    $sth->store_result();
+    $sth->bind_result($id, $name);
+    while ($sth->fetch()) {
+        echo "$id, $name\n";
+    }
+    $sth->free_result();
+    $sth->close();
+}
+</pre><br />
+使えねーなこりゃ。<br />
+<br />
+次、LIKE検索。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "SELECT id, name FROM users WHERE name LIKE ?";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('s', $param);
+    $myname = "理";
+    $param = "%".$myname."%";
+    $sth->execute();
+    $sth->store_result();
+    $sth->bind_result($id, $name);
+    while ($sth->fetch()) {
+        echo "$id, $name\n";
+    }
+    $sth->free_result();
+    $sth->close();
+}
+</pre><br />
+一行だけ更新。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "UPDATE users SET name = ? WHERE id = ?";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('ss', $myname, $myid);
+    $myname = "里香";
+    $myid = "3";
+    $sth->execute();
+    printf("%d Row affected.\n", $sth->affected_rows);
+    $sth->close();
+}
+</pre><br />
+ループで複数行更新。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "UPDATE users SET name = ? WHERE id = ?";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('ss', $myname, $myid);
+    $id_array = array('8'=>'佐藤', '2'=>'山田');
+    foreach($id_array as $myid => $myname) {
+        $sth->execute();
+    }
+    printf("%d Row affected.\n", $sth->affected_rows);
+    $sth->close();
+}
+</pre><br />
+削除。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "DELETE FROM users WHERE id = ?";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('s', $id);
+    $id = "2";
+    $sth->execute();
+    printf("%d Row affected.\n", $sth->affected_rows);
+    $sth->close();
+}
+</pre><br />
+インサートとインサートしたIDの取得。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "INSERT INTO users (name, email) VALUES (?, ?)";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('ss', $myname, $myemail);
+    $myname = "歌代";
+    $myemail = "xxxx@xxxx.xxx";
+    $sth->execute();
+
+    // INSERTED_ID の取得
+    printf("%d Inserted.\n", $dbh->insert_id);// こっち
+    printf("%d Inserted.\n", $sth->insert_id);
+    $sth->close();
+}
+</pre><br />
+インサート処理でエラー処理を付ける。<br />
+<br />
+<pre class="brush: php">$sth = $dbh->stmt_init();
+$sql = "INSERT INTO users (id, name, email) VALUES (?, ?, ?)";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('iss', $myid, $myname, $myemail);
+    $myid = "2";
+    $myname = "歌代";
+    $myemail = "xxxx@xxxx.xxx";
+    if ( ! $sth->execute()) {
+        die('failed'.$sth->error);
+    }
+    $sth->close();
+}
+</pre><br />
+トランザクションで失敗したらロールバック。<br />
+<br />
+<pre class="brush: php">$dbh->autocommit(FALSE);
+$sth = $dbh->stmt_init();
+$sql = "INSERT INTO myusers (name, email) VALUES (?, ?)";
+if ( ! $sth->prepare($sql)) {
+    die('Failed to prepare statement\n');
+} else {
+    $sth->bind_param('ss', $myname, $myemail);
+    $myname = "夢";
+    $myemail = "xxxx@xxxx.xxx";
+    if ( ! $sth->execute()) {
+        $dbh->rollback();
+    } else {
+        $dbh->commit();
+    }
+    $sth->close();
+}
+</pre><br />
+うーん、、こんなとこかー。<br />
+<br />
+<br />

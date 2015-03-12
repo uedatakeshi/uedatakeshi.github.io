@@ -1,0 +1,190 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(11) 確認画面その1
+date: '2011-09-14T06:47:00.004+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:08:02.963+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-4189960962484554967
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1311.html
+---
+
+<h1>確認画面その1</h1>
+
+<p>まず、確認画面のビューを作ります。
+bake で自動生成した、 view.ctp がそのまま使えそうなので、 view.ctp を開いてから「名前を付けて保存」で confirm.ctp を作成します。</p>
+<p>今回確認画面はhidden方式でいくので、
+<pre class="brush: html">
+&lt;div class="members view"&gt;
+</pre>
+となっている所の、直下にフォームを作ります。</p>
+<pre class="brush: php">
+&lt;?php echo $this->Form->create('Member', array('id'=>'MemberConfirm')); ?&gt;
+</pre>
+<p>こんな感じです。
+ただの
+<pre class="brush: php">
+$this->Form->create('Member');
+</pre>
+だけでもいいっちゃいいんですが、そうすると、以下のような add の画面と全く同じ id でフォームタグが生成されてしまうので、
+<pre class="brush: html">
+&lt;form id="MemberAddForm" accept-charset="utf-8" method="post" action="/~myname/cake/members/add"&gt;
+</pre>
+これはなんとなく気持ち悪いので、
+<pre class="brush: php">
+array('id'=>'MemberConfirm')
+</pre>
+を指定して、確認画面用のフォームの id を指定しておきます。</p>
+<p>で、その下に add.ctp のフォーム部分、
+<pre class="brush: php">
+&lt;?php
+    echo $this->Form->input('email');
+    echo $this->Form->input('password');
+    echo $this->Form->input('type_id');
+    echo $this->Form->input('birthday');
+    echo $this->Form->input('img1');
+    echo $this->Form->input('img2');
+    echo $this->Form->input('Favorite');
+?&gt;
+</pre>
+をごっそりそのままコピーして貼り付けます。</p>
+<p>hidden にするので
+<pre class="brush: php">
+array('type'=>'hidden')
+</pre>
+を一個一個全部に指定して、一応全体を div で囲んでおきます。
+こんな感じになりました。</p>
+<pre class="brush: php">
+&lt;div class="members view"&gt;
+&lt;?php echo $this-&gt;Form-&gt;create('Member', array('id'=&gt;'MemberConfirm'));?&gt;
+&lt;div style="display:none;"&gt;
+&lt;?php
+    echo $this-&gt;Form-&gt;input('email', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('password', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('type_id', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('birthday', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('img1', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('img2', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('Favorite', array('type'=&gt;'hidden'));
+?&gt;
+&lt;/div&gt;
+
+&lt;h2&gt;&lt;?php  __('Member');?&gt;&lt;/h2&gt;
+</pre>
+
+<p>ただ、アクションとしては同じ add で処理するので、なにかで識別するようにしないと「今は確認画面だ！」というのが分かりません。</p>
+<p>ということで、 mode = ‘confirm’ というのを作り出して、これを add.ctp （フォーム入力画面）の方に、 hidden で入れておきます。</p>
+<p>add.ctp 側
+<pre class="brush: php; highlight: [3,4,5]">
+&lt;div class="members form"&gt;
+&lt;?php echo $this-&gt;Form-&gt;create('Member');?&gt;
+&lt;div style="display:none;"&gt;
+    &lt;?php echo $this-&gt;Form-&gt;hidden('mode', array('value'=&gt;'confirm')); ?&gt;
+&lt;/div&gt;
+
+    &lt;h2&gt;
+        &lt;?php __('Add Member'); ?&gt;&lt;/h2&gt;
+</pre>
+</p>
+<p>confirm.ctp 側はvalueなしで。以下を追加。</p>
+<pre class="brush: php">
+    echo $this->Form->input('mode', array('type'=>'hidden','value'=>''));
+</pre>
+
+<p>これで、
+<ul>
+   <li>add → confirm へは mode = ‘confirm’ で、</li>
+   <li>confirm → complete へは mode = ” で</li>
+</ul>
+   
+行く事になります。
+最後に、ボタンを追加しておきます。</p>
+<pre class="brush: php">
+&lt;div class="submit"&gt;
+    &lt;?php echo $this-&gt;Form-&gt;button('戻る', array('id'=&gt;'back')); ?&gt;
+&lt;/div&gt;
+&lt;?php echo $this-&gt;Form-&gt;end('送信'); ?&gt;
+</pre>
+
+<p>これはどっか適当に下の方に入れておきます。
+一応ただの id=”back” ボタンをつけておきます。</p>
+<p>あと、view.ctp との違いで、そっちには id がありますが、こっちにはまだ id は決まっていない、存在していないので、以下の id に関する表示部分を削除しておきます。</p>
+<pre class="brush: php">
+        &lt;dt&lt;?php if ($i % 2 == 0) echo $class;?&gt;&gt;&lt;?php __('Id'); ?&gt;&lt;/dt&gt;
+        &lt;dd&lt;?php if ($i++ % 2 == 0) echo $class;?&gt;&gt;
+            &lt;?php echo $member['Member']['id']; ?&gt;
+            &nbsp;
+        &lt;/dd&gt;
+</pre>
+
+<p>同様に、 Created と Modified も要らないので削除しておきます。</p>
+<pre class="brush: php">
+        &lt;dt&lt;?php if ($i % 2 == 0) echo $class;?&gt;&gt;&lt;?php __('Created'); ?&gt;&lt;/dt&gt;
+        &lt;dd&lt;?php if ($i++ % 2 == 0) echo $class;?&gt;&gt;
+            &lt;?php echo $member['Member']['created']; ?&gt;
+            &nbsp;
+        &lt;/dd&gt;
+        &lt;dt&lt;?php if ($i % 2 == 0) echo $class;?&gt;&gt;&lt;?php __('Modified'); ?&gt;&lt;/dt&gt;
+        &lt;dd&lt;?php if ($i++ % 2 == 0) echo $class;?&gt;&gt;
+            &lt;?php echo $member['Member']['modified']; ?&gt;
+            &nbsp;
+        &lt;/dd&gt;
+</pre>
+
+<p>ここでもうそろそろ画面を見たいのでコントローラをいじります。</p>
+<p>/app/controllers/members_controller.php を開いて、function add() の以下の部分、
+<pre class="brush: php">
+        if (!empty($this->data)) {
+            $this->Member->create();
+            if ($this->Member->save($this->data)) {
+                $this->Session->setFlash(__('The member has been saved', true));
+                $this->redirect(array('action' => 'index'));
+            } else {
+                $this->Session->setFlash(__('The member could not be saved. Please, try again.', true));
+            }
+        }
+</pre>
+
+この1行目からのif文の中にさらにもう一個if文を入れて、もとからあった部分はelseのあとにつっこみます。</p>
+<p>構造としてはこんな感じ。</p>
+<pre class="brush: php">
+if (!empty($this->data)) {
+    if () {
+     
+    } else {
+    // もとからあった部分
+    }
+}
+</pre>
+
+<p>で、その新しいif文を以下のようにします。</p>
+<pre class="brush: php; highlight: [3,4,5,6,7]">
+    function add() {
+        if (!empty($this->data)) {
+            if ($this->data['Member']['mode'] == 'confirm') {
+                $this->Member->set($this->data);
+                $this->set('member', $this->data);
+                $this->render('confirm');
+            } else {
+                $this->Member->create();
+                if ($this->Member->save($this->data)) {
+                    $this->Session->setFlash(__('The member has been saved', true));
+                    $this->redirect(array('action' => 'index'));
+                } else {
+                    $this->Session->setFlash(__('The member could not be saved. Please, try again.', true));
+                }
+            }
+        }
+</pre>
+
+
+<p>これで確認画面が出るはずなのでブラウザで /members/add を開いて適当に入力して進むと・・・<br />
+ぼこぼこにエラーが出てますが、入力したEmailの値とかは表示されてるはずです。<br />
+エラーは配列とかの問題だけなので今は気にしなくていいです。
+</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-15-cakephp1312 %}">>>次のページ「確認画面その2」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-13-cakephp1310 %}">&lt;&lt;前のページ「レイアウトその2」へ</a></li>
+</ul>

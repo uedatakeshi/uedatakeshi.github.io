@@ -1,0 +1,127 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(16) ログイン認証
+date: '2011-09-18T20:33:00.004+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:06:24.987+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1602269874849659989
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1316.html
+---
+
+<h1>ログイン認証</h1>
+
+<p>会員がログインできるようにします。
+最初にログインする画面とログインした後の会員用のメニュー画面のテンプレを作っておきます。
+それぞれこんな感じで適当に。
+会員ログイン画面 login.ctp のファイル名で。</p>
+
+<pre class="brush: php">
+&lt;div class="members form"&gt;
+&lt;?php echo $this-&gt;Form-&gt;create('Member', array('action' =&gt; 'login'));?&gt;
+
+    &lt;h2&gt;&lt;?php __('ログイン'); ?&gt;&lt;/h2&gt;
+    &lt;?php
+        echo $this-&gt;Form-&gt;input('email',array('label' =&gt; array('text'=&gt;'メールアドレス')));
+        echo $this-&gt;Form-&gt;input('password',array('label' =&gt; array('text'=&gt;'パスワード')));
+    ?&gt;
+    &lt;?php echo $this-&gt;Form-&gt;end(__('ログイン', true));?&gt;
+&lt;/div&gt;
+&lt;div class="actions"&gt;
+    &lt;ul&gt;
+        &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('新規登録はこちら', true), array('action'=&gt;'add')); ?&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
+
+<p>会員メニュー画面 menu.ctp のファイル名で。</p>
+
+<pre class="brush: php">
+&lt;div class="members index"&gt;
+    &lt;h2&gt;&lt;?php __('会員メニュー'); ?&gt;&lt;/h2&gt;
+&lt;/div&gt;
+&lt;div class="actions"&gt;
+    &lt;ul&gt;
+        &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('会員情報の更新', true), array('action'=&gt;'edit')); ?&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('退会手続き', true), array('action'=&gt;'leave')); ?&gt; &lt;/li&gt;
+        &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('ログアウト', true), array('action'=&gt;'logout')); ?&gt; &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
+
+<p>ログアウトの完了画面も作っておきます。logout.ctp のファイル名で。</p>
+<pre class="brush: php">
+&lt;div class="members index"&gt;
+    &lt;h2&gt;&lt;?php __('ログアウトしました'); ?&gt;&lt;/h2&gt;
+&lt;/div&gt;
+</pre>
+
+<p>簡単なやつでいいです。
+で、コントローラ members_controller.php にログイン、ログアウトそれぞれのアクションを入れます。
+ログインがこんな感じで。</p>
+
+<pre class="brush: php">
+    function login() {
+        $this-&gt;Member-&gt;recursive = 0;
+        $this-&gt;Session-&gt;destroy();
+        if (!empty($this-&gt;data)) {
+            if ($this-&gt;data['Member']['email']) {
+                $member = $this-&gt;Member-&gt;findbyEmail($this-&gt;data['Member']['email'], array('id','password'));
+                if ($member['Member']['password'] === $this-&gt;data['Member']['password']) {
+                    $this-&gt;Session-&gt;write('Member.id', $member['Member']['id']);
+                    $this-&gt;redirect(array('action'=&gt;'menu'));
+                } else {
+                    $this-&gt;Session-&gt;setFlash(__('ログインIDまたはパスワードが違います', true));
+                }
+            }
+        }
+    }
+</pre>
+
+<p>入力された email の値で、 findbyEmail を使ってクエリーを投げます。
+実行されたクエリーはこのようなものです。</p>
+
+<pre class="brush: sql">
+SELECT `Member`.`id`, `Member`.`password` FROM `members` AS `Member` LEFT JOIN `types` AS `Type` ON (`Member`.`type_id` = `Type`.`id`) WHERE `Member`.`email` = 'your@email' LIMIT 1
+</pre>
+<p>結果のパスワードと入力されたパスワードの値を比較します。
+認証OKだったら、 ‘Member.id’ というセッションに結果の id を入れます。
+メニュー画面へリダイレクトします。</p>
+
+
+<p>ログアウトは、
+
+<pre class="brush: php">
+function logout() {
+    $this-&gt;Session-&gt;destroy();
+}
+</pre>
+ただセッションを破棄するだけです。</p>
+<p>メニューは、
+
+<pre class="brush: php">
+function menu() {
+    if (!$this-&gt;Session-&gt;check('Member.id')) {
+        $this-&gt;redirect(array('action'=&gt;'login'));
+    }
+}
+</pre>
+Member.id というセッションがあるかどうかチェックします。</p>
+<p>なければログイン画面にリダイレクトします。
+function edit()　にも、以下のチェックを入れておきます。</p>
+
+<pre class="brush: php; highlight:[2,3,4]">
+    function edit($id = null) {
+        if (!$this-&gt;Session-&gt;check('Member.id')) {
+            $this-&gt;redirect(array('action'=&gt;'login'));
+        }
+
+        if (!$id && empty($this-&gt;data)) {
+            $this-&gt;Session-&gt;setFlash(__('Invalid member', true));
+</pre>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/09/cakephp1317.html">>>次のページ「画像アップロード」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/09/cakephp1315.html">&lt;&lt;前のページ「メール送信」へ</a></li>
+</ul>

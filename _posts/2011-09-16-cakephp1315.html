@@ -1,0 +1,159 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(15) メール送信
+date: '2011-09-16T06:32:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:06:40.252+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1405941848898478788
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1315.html
+---
+
+<h1>メール送信</h1>
+
+<p>ここで会員登録時のメール送信を作ります。
+Emailコンポーネントの使い方は本家サイトのドキュメントの通りです。</p>
+<p>/app 直下の app_controller.php を開いて、
+<pre class="brush: php">
+class AppController extends Controller {
+}
+</pre>
+
+となっている中に、
+<pre class="brush: php">
+    var $components = array('Session', 'Email');
+</pre>
+と入れます。</p>
+
+<p>そして、以下のようなファンクションを入れます。</p>
+<pre class="brush: php">
+function _sendEmail($template, $subject, $to, $attachments, $from, $replyto, $fromName, $sendAs, $bcc) {
+    if (!$from) {$from = 'your@email';}
+    if (!$replyto) {$replyto = 'your@email';}
+    if ($fromName) {$from = $fromName . " &lt;$from&gt;";}
+    $this-&gt;Email-&gt;to = $to;
+    $this-&gt;Email-&gt;bcc = $bcc;
+    $this-&gt;Email-&gt;subject = $subject;
+    $this-&gt;Email-&gt;replyTo = $replyto;
+    $this-&gt;Email-&gt;from = $from;
+    $this-&gt;Email-&gt;template = $template;
+    if ($attachments) {$this-&gt;Email-&gt;attachments = $attachments;}
+    $this-&gt;Email-&gt;sendAs = $sendAs;
+    $this-&gt;Email-&gt;send();
+}
+</pre>
+<p>smtp で送信する場合は、$this-&gt;Email-&gt;send() の部分を以下に書き換えます。</p>
+<pre class="brush: php">
+        $this-&gt;Email-&gt;smtpOptions = array(
+            'port'=&gt;'587',
+            'timeout'=&gt;'30',
+            'host' =&gt; 'your.host.name',
+            'username'=&gt;'username',
+            'password'=&gt;'password'
+        );
+        $this-&gt;Email-&gt;delivery = 'smtp';
+        $this-&gt;Email-&gt;send();
+        $this-&gt;set('smtp-errors', $this-&gt;Email-&gt;smtpError);
+</pre>
+<p>gmailで送る場合は、smtpOptions のところを以下のようにします。</p>
+<pre class="brush: php">
+        $this-&gt;Email-&gt;smtpOptions = array(
+            'port'=&gt;'465',
+            'timeout'=&gt;'30',
+            'host' =&gt; 'ssl://smtp.gmail.com',
+            'username'=&gt;'your@email',
+            'password'=&gt;'yourpassword'
+        );
+</pre>
+
+<p>メールの文字コードは、デフォルトだとUTF-8で送られます。
+charsetは以下で設定できますが、ISO-2022-JP にすると subject が文字化けするようです。</p>
+<pre class="brush: php">
+$this-&gt;Email-&gt;charset = "ISO-2022-JP";
+</pre>
+<p>from のメールアドレスは固定だし、text形式のメールしか送らない、というのであれば、
+最初に設定した app_controller.php で、
+<pre class="brush: php">
+    var $components = array(
+        'Session', 
+        'Email' =&gt; array(
+            'from' =&gt; 'your@email',
+            'sendAs' =&gt; 'text',
+        ),
+    );
+</pre>
+というように書くこともできます。</p>
+<p>こうすると、function _sendEmail() の中では指定する必要がありません。</p>
+<pre class="brush: php">
+//        $this-&gt;Email-&gt;sendAs = $sendAs;
+</pre>
+<p>つまり、var $components の方にどんどん指定していってしまうと、function _sendEmail() の方に書くことがなくなり、どんどん減っていきます。<br />
+自分の使いやすいと思うあたりに調節すればよいと思います。</p>
+
+<p>メール文面のテンプレートは、まずレイアウトを
+<ul>
+<li>/app/views/layouts/email/html/default.ctp</li>
+<li>/app/views/layouts/email/text/default.ctp</li>
+</ul>
+
+に入れます。</p>
+<p>テキストメールの場合は、とりあえず、default.ctp に
+<pre class="brush: php">
+&lt;?php echo $content_for_layout; ?&gt;
+</pre>
+とだけ書いて保存します。</p>
+
+<p>文面は
+<ul>
+<li>/app/elements/email/html/default.ctp</li>
+<li>/app/elements/email/text/default.ctp</li>
+</ul>
+に入れます。</p>
+<p>文面は普通に、確認画面の view.ctp と同じように作ればいいと思います。</p>
+<pre class="brush: php">
+以下の会員登録がありました。
+-----------------------------------------------------
+メールアドレス： &lt;?php echo $member['Member']['email'] ."\n"; ?&gt;
+会員種別：&lt;?php echo $types[$member['Member']['type_id']] ."\n"; ?&gt;
+誕生日：&lt;?php echo $member['Member']['birthday']['year']; ?&gt;年&lt;?php echo $member['Member']['birthday']['month']; ?&gt;月&lt;?php echo $member['Member']['birthday']['day']; ?&gt;日
+好きな物：
+&lt;?php
+if (!empty($member['Favorite'])) {
+    foreach ($member['Favorite']['Favorite'] as $favorite) {
+        echo "\t".$favorites[$favorite['id']]."\n";
+    }
+}
+?&gt;
+</pre>
+<p>こんな感じです。<br />
+こちらの elements の中の方のファイル名を上記 $this-&gt;Email-&gt;template に指定します。</p>
+<p>ここではとりあえず、
+<pre class="brush: shell">
+/app/elements/email/text/member_add.ctp
+</pre>
+としました。</p>
+<p>で、コントローラ members_cntroller.php のアクション add のsaveしてる部分の下に
+<pre class="brush: php">
+            } else {
+                $this-&gt;Member-&gt;create();
+                if ($this-&gt;Member-&gt;save($this-&gt;data)) {
+                    $this-&gt;set('member', $this-&gt;data);
+                    $attachments = array();
+                    $this-&gt;_sendEmail('member_add', 'ユーザー登録のお知らせ', 'your@email', $attachments,'','','','text',array());
+                    $this-&gt;Session-&gt;setFlash(__('The member has been saved', true));
+                    $this-&gt;redirect(array('action' =&gt; 'complete'));
+                } else {
+                    $this-&gt;Session-&gt;setFlash(__('The member could not be saved. Please, try again.', true));
+                }
+            }
+</pre>
+
+を入れます。<br />
+メールを受信して確認します。</p>
+
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-18-cakephp1316 %}">>>次のページ「ログイン認証」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-16-cakephp1314 %}">&lt;&lt;前のページ「checkbox の validate」へ</a></li>
+</ul>

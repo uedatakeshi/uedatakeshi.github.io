@@ -1,0 +1,167 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(17) 画像アップロード
+date: '2011-10-03T06:34:00.003+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:06:10.117+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-2926874544624304363
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/10/cakephp1317.html
+---
+
+<h1>画像アップロード</h1>
+
+<p>今回画像はデータベースにはそのファイル名を登録します。<br />
+つまり、 members テーブルの img1 、 img2 はファイル名です。<br />
+ということで別途、画像の実体という意味合いで solid1 、 solid2 という名前を用意します。<br />
+（ img1 、 img2 を使い回すと面倒なことになるので）<br />
+登録する画像はとりあえず、/app/wwwroot/files の中に保存することにします。<br />
+まず add.ctp を書き換えます。</p>
+
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('img1');
+        echo $this-&gt;Form-&gt;input('img2');
+</pre>
+<p>
+こうなっているところを、
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('solid1', array('type'=&gt;'file', 'label' =&gt; '画像１'));
+        echo $this-&gt;Form-&gt;input('solid2', array('type'=&gt;'file', 'label' =&gt; '画像２'));
+</pre>
+こうします。
+</p>
+<p>おっと、<br />
+formを enctype=”multipart/form-data” にしないといけませんので。
+<pre class="brush: php">
+&lt;?php echo $this-&gt;Form-&gt;create('Member', array('type'=&gt;'file')); ?&gt;
+</pre>
+に変えます。</p>
+<p>これで、出力は
+<pre class="brush: html">
+&lt;form accept-charset="utf-8" method="post" enctype="multipart/form-data" id="MemberAddForm" action="/~myname/cake/members/add"&gt;
+</pre>
+となります。
+/app/models/member.php を開いて、モデルの validate を追加します。</p>
+<pre class="brush: php">
+        'solid1' =&gt; array(
+            'rule1' =&gt; array(
+                'rule' =&gt; array('imgType', 'solid1'),
+                'message'=&gt;'画像１はJPEG形式で登録してください',
+            ),
+        ),
+</pre>
+<p>
+これは ’solid2‘ についても同じように追加しておきます。<br />
+いわゆるCakePHP本家Docの4.1.5.2 Adding your own Validation Methodsのやり方なので、自分で ‘imgType’ という名前の function を作ります。<br />
+array(‘imgType’, ’solid1′), のうしろの ’solid1′ はその function に渡す引数になります。<br />
+以下の function imgType を作って member.php の下の方に入れておきます。
+</p>
+<pre class="brush: php">
+    function imgType($data, $name){
+        if (!$this-&gt;data['Member'][$name]['type'] || ($this-&gt;data['Member'][$name]['type'] == 'image/pjpeg') || ($this-&gt;data['Member'][$name]['type'] == 'image/jpeg')) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+</pre>
+<p>
+単に画像の type が jpeg がどうかをチェックしているだけです。<br />
+他にファイルサイズのチェックとか、ファイル名のチェックとか、入れたければ入れます。<br />
+で、ちょっとブラウザからテストしてみます。<br />
+gif画像なんかを登録した時に、ちゃんと「画像１はJPEG形式で登録してください」のエラーが出たでしょうか。<br />
+最後にコントローラ members_controller.php に画像を保存する処理を追加します。
+</p>
+<p>確認画面の時に作った validates の下に、
+<pre class="brush: php; highlight: [4, 5,6,7,8,9]">
+            if ($this-&gt;data['Member']['mode'] == 'confirm') {
+                $this-&gt;Member-&gt;set($this-&gt;data);
+                if ($this-&gt;Member-&gt;validates($this-&gt;data)) {
+                    if ($this-&gt;data['Member']['solid1']['type']){
+                        $this-&gt;data['Member']['img1'] = $this-&gt;_imgUpload('solid1');
+                    }
+                    if ($this-&gt;data['Member']['solid2']['type']){
+                        $this-&gt;data['Member']['img2'] = $this-&gt;_imgUpload('solid2');
+                    }
+                    $this-&gt;set('member', $this-&gt;data);
+                    $this-&gt;render('confirm');
+                } else {
+                    $this-&gt;Session-&gt;setFlash(__('エラーがあります', true));
+                }
+            } elseif ($this-&gt;data['Member']['mode'] == 'back') {
+</pre>
+
+とします。</p>
+<p>ここの _imgUpload は画像を保存するための function で、自分で作ります。<br />
+solid1 の画像実体を保存し、その時に画像のファイル名を生成して、そのファイル名を img1 として返します。
+</p>
+<pre class="brush: php">
+    function _imgUpload($name) {
+        if ($this-&gt;data['Member'][$name]['tmp_name']){
+            $fd = fopen($this-&gt;data['Member'][$name]['tmp_name'], "r");
+            $filesize = $this-&gt;data['Member'][$name]['size'];
+            $filedata = fread ($fd, $filesize);
+            fclose ($fd);
+            
+            $img_file = md5($filedata). ".jpg";
+            $res = fopen(WWW_ROOT . "files/" . $img_file,'w');
+            fwrite($res,$filedata);
+            fclose($res);
+            
+            return $img_file;
+        }
+    }
+</pre>
+<p>
+
+
+こんな感じです。とりあえず、同じコントローラの下の方に入れておきます。
+確認画面 confirm.ctp に表示されるよう修正します。</p>
+<p>こうなってるのを、
+<pre class="brush: php">
+        &lt;dt&lt;?php if ($i % 2 == 0) echo $class;?&gt;&gt;&lt;?php __('Img1'); ?&gt;&lt;/dt&gt;
+        &lt;dd&lt;?php if ($i++ % 2 == 0) echo $class;?&gt;&gt;
+            &lt;?php echo $member['Member']['img1']; ?&gt;
+            &nbsp;
+        &lt;/dd&gt;
+</pre>
+こうします。</p>
+<pre class="brush: php">
+        &lt;dt&lt;?php if ($i % 2 == 0) echo $class;?&gt;&gt;&lt;?php __('画像１'); ?&gt;&lt;/dt&gt;
+        &lt;dd&lt;?php if ($i++ % 2 == 0) echo $class;?&gt;&gt;
+            &lt;?php if (isset($member['Member']['img1'])){ echo $this-&gt;Html-&gt;image("/files/".$member['Member']['img1']);} ?&gt;
+            &nbsp;
+        &lt;/dd&gt;
+</pre>
+<p>hidden 部分には
+<pre class="brush: php">
+    echo $this-&gt;Form-&gt;input('solid1.type', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('solid1.size', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('solid2.type', array('type'=&gt;'hidden'));
+    echo $this-&gt;Form-&gt;input('solid2.size', array('type'=&gt;'hidden'));
+</pre>
+
+を追加します。</p>
+<p>確認画面で画像が表示されたでしょうか。</p>
+
+<p>最後、メールの添付ファイルに指定します。<br />
+members_controller.php に戻って、addアクションの、saveしてるところの下に以下を追加します。</p>
+<pre class="brush: php; highlight: [3,4, 5,6,7,8,9,10]">
+                $this-&gt;Member-&gt;create();
+                if ($this-&gt;Member-&gt;save($this-&gt;data)) {
+                    $this-&gt;set('member', $this-&gt;data);
+                    $attachments = array();
+                    if ($this-&gt;data['Member']['img1']){
+                        $attachments[] = WWW_ROOT . "files/" . $this-&gt;data['Member']['img1'];
+                    }
+                    if ($this-&gt;data['Member']['img2']){
+                        $attachments[] = WWW_ROOT . "files/" . $this-&gt;data['Member']['img2'];
+                    }
+</pre>
+<p>$attachments 配列に画像のパスを追加してるだけです。</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1318.html">>>次のページ「編集画面」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/09/cakephp1316.html">&lt;&lt;前のページ「ログイン認証」へ</a></li>
+</ul>

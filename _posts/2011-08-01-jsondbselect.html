@@ -1,0 +1,82 @@
+---
+layout: post
+title: JSON形式のつづき。DBからselectしたデータが連想配列になってるのでそのまま処理したい編。
+date: '2011-08-01T15:05:00.002+09:00'
+author: 上田 剛
+tags:
+- Javascript
+- php
+modified_time: '2011-08-01T15:08:22.945+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8107722895765954021
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/08/jsondbselect.html
+---
+
+なにはともあれ、DBからselectしたデータがある訳です。<br />
+で、selectしたデータのid列の値がキーになっているとなにかと便利な訳ですよ。<br />
+後から参照する時にidだけ分かれば一発ですから。<br />
+ということでデータが今phpでこんなになってるとします。<br />
+<pre class="brush: php">
+Array
+(
+    [4] => Array
+        (
+            [id] => 4
+            [year] => 2012
+            [created] => 2011-07-26 19:37:37.985709
+        )
+
+    [7] => Array
+        (
+            [id] => 7
+            [year] => 2011
+            [created] => 2011-07-27 16:43:11.697075
+        )
+)
+</pre>
+こいつをJSON形式で出力したいってことです。<br />
+最終的にこんな形になればいいので、<br />
+<pre class="brush: js">
+{
+    "4": {
+        "id": "4",
+        "year": "2012",
+        "created": "2011-07-26 19:37:37.985709"
+    },
+    "7": {
+        "id": "7",
+        "year": "2011",
+        "created": "2011-07-27 16:43:11.697075"
+    }
+}
+</pre>
+昨日のファンクションを以下のように修正。<br />
+<pre class="brush: php">
+$json = "{".toJson($data)."}";
+
+function toJson($data) {   
+    $json = array();
+    foreach ($data as $string => $value) {
+        $key = "\"$string\":";
+
+        if (is_array($value)) {
+            $json[] = sprintf("%s {{ "{%" }}s}", $key, toJson($value));
+        } else {
+            $json[] = sprintf("%s \"%s\"", $key, addslashes($value));
+        }
+    }
+    return implode(", ", $json);
+}
+</pre>
+
+こうすると、例えば返って来た json を javascript で例えば data とかいうオブジェクトに入れたとしたら、<br />
+<pre class="brush: js">
+data[4].year
+</pre>
+とかで処理できる訳です。<br />
+<pre class="brush: js">
+    var tbl='';
+    for (key in data) {
+        tbl += '&lt;tr&gt;&lt;td&gt;'+data[key].year+'&lt;/td&gt;&lt;/tr&gt;";
+    }
+</pre>
+みたいにね。<br />

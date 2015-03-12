@@ -1,0 +1,38 @@
+---
+layout: post
+title: smartyの{section}関数に渡す配列は0から順番になってないと表示されない
+date: '2010-06-25T14:19:00.005+09:00'
+author: 上田 剛
+tags:
+- Smarty
+- php
+modified_time: '2010-08-07T10:29:28.469+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-9082695453735826657
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/06/smartysection0.html
+---
+
+smartyの{section}関数に渡す配列は0から順番になってないと表示されない
+
+今見た感じバージョンはSmarty 2.6.18だけど。
+以下のような{section}を使ったループ表示で、
+<pre class="brush: html">
+{section name=key loop=$message}
+ {$message[key]|escape}&lt;br /&gt;
+{/section}
+</pre>
+php側を、
+<pre class="brush: php">
+$message = array('123','456','abc');
+
+$o_smarty -> assign("message", $message);
+</pre>
+とすると、ちゃんと表示されるが、
+<pre class="brush: php">
+$message[3] = '123';
+$message[7] = '456';
+$message[] = 'abc';
+
+$o_smarty -> assign("emes", $emes);
+</pre>
+とすると、何も表示されない。
+悩まず、{foreach}に変更すべし。

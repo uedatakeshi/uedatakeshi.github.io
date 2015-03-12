@@ -1,0 +1,102 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(2) CakePHPの設置
+date: '2011-09-05T13:59:00.007+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:10:38.903+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5294558666729719589
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp132.html
+---
+
+<h1>CakePHPの設置</h1>
+<p> <a href="http://cakephp.org/">本家サイト</a>からダウンロードした CakePHP を設置します。<br />
+「Download」の画像をクリックすると<a href="https://github.com/cakephp/cakephp/downloads">github のページ</a>に飛ぶので、そちらから、
+<a href="https://github.com/cakephp/cakephp/zipball/1.3.11">1.3.11.zip — 1.3.11</a> をクリックします。
+</p>
+<p>
+ダウンロードしたファイルを解凍すると、 cakephp-cakephp-3b830a4 という名前のフォルダーが出来るので、これを cake とリネームしてローカル環境のドキュメントルート以下にコピーします。<br />
+MacOSXの場合は、いわゆる「サイト」フォルダー<br />
+<pre class="brush: shell">
+/Users/myname/Sites
+</pre>
+以下ということになります。
+</p>
+<p>
+Windows の場合は、apache をどこにインストールしたかにもよるんでしょうが、その htdocs 以下、ということです。例えば、<br />
+<pre class="brush: shell">
+c:¥Program Files¥apache・・・・¥htdocs
+</pre>
+になるかと思います。<br />
+本番リリースと同じ構造にしておく、という手もありますが、開発用のローカル環境ではなにもいじらない方がやりやすいんじゃないですかね。<br />
+なにしろ、まっさらの状態でも本体をダウンロードしてきてそのまま始められる訳ですから。
+</p>
+<p>
+で、 http://localhost/~myname/cake/ をブラウザから開きます。<br />
+<pre class="brush: shell">
+Warning (512): /Users/myname/Sites/cake/app/tmp/cache/ is not writable [CORE/cake/libs/cache/file.php, line 267]
+</pre>
+<pre class="brush: shell">
+Warning (512): /Users/myname/Sites/cake/app/tmp/cache/persistent/ is not writable [CORE/cake/libs/cache/file.php, line 267]
+</pre>
+<pre class="brush: shell">
+Warning (512): /Users/myname/Sites/cake/app/tmp/cache/models/ is not writable [CORE/cake/libs/cache/file.php, line 267]
+</pre>
+<pre class="brush: shell">
+Notice (1024): Please change the value of 'Security.salt' in app/config/core.php to a salt value specific to your application [CORE/cake/libs/debugger.php, line 694]
+</pre>
+<pre class="brush: shell">
+Notice (1024): Please change the value of 'Security.cipherSeed' in app/config/core.php to a numeric (digits only) seed value specific to your application [CORE/cake/libs/debugger.php, line 698]
+</pre>
+という３つの Warning と２つの Notice が出ますが、とりあえず動いてるってことでOKでしょう。
+</p>
+<p>
+一つ一つ対応していきます。
+</p>
+<p>
+/app/tmp/cache を書き込み可能にします。<br />
+ついでに /app/tmp も書き込み可能にするので、/appに移動して、<br />
+<pre class="brush: shell">
+chmod -R 0777 tmp
+</pre>
+とします。
+ブラウザをリロードします。
+</p>
+<p>
+引き続き、/app/config/core.php を開いて、<br />
+<pre class="brush: php">
+ Configure::write('Security.salt', 'DYhG93b0qyJfIxfs2guVoUubWwvniR2G0FgaC9mi');
+</pre>
+<pre class="brush: php">
+ Configure::write('Security.cipherSeed', '76859309657453542496749683645');
+</pre>
+の２つの部分の値を書き換えます。
+</p>
+<p>
+これでOKのはずですが、もし、php が 5.3 で、しかも php.ini に default timezone の設定をしていなかったりすると、<br />
+<pre class="brush: shell">
+Warning (2): strtotime() [function.strtotime]: It is not safe to rely on the system's timezone settings. You are *required* to use the date.timezone setting or the date_default_timezone_set() function. In case you used any of those methods and you are still getting this warning, you most likely misspelled the timezone identifier. We selected 'Asia/Tokyo' for 'JST/9.0/no DST' instead [CORE/cake/libs/cache.php, line 597]
+</pre>
+というような激しいエラーが出ますので、その場合は、 /app/config/core.php の、<br />
+<pre class="brush: php">
+ //date_default_timezone_set('UTC');
+</pre>
+となっているところを、<br />
+<pre class="brush: php">
+ date_default_timezone_set('Asia/Tokyo');
+</pre>
+としておきます。<br />
+できれば php.ini の方を設定することをおすすめします。
+</p>
+<p>
+最後、ついでなので、以下の一行のコメントアウトを外しておきます。
+<pre class="brush: php">
+ //Configure::write('Routing.prefixes', array('admin'));
+</pre>
+</p>
+<br />
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp133 %}">>>次のページ「データベース接続」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp131 %}">&lt;&lt;前のページ「データベースの作成」へ</a></li>
+</ul>

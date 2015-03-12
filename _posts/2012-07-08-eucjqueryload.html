@@ -1,0 +1,94 @@
+---
+layout: post
+title: 一つ目を選択したら二つ目のセレクトの値が変化するようにしたいんだが、ソースの文字コードがEUCでjqueryのload()を使って読み込むと文字化けしてしまう。
+date: '2012-07-08T06:41:00.000+09:00'
+author: 上田 剛
+tags:
+- Javascript
+- php
+- jQuery
+- Postgres
+modified_time: '2012-07-08T06:41:22.347+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-3633255871497743114
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/07/eucjqueryload.html
+---
+
+<br />
+<h1>一つ目を選択したら二つ目のセレクトの値が変化するようにしたいんだが、ソースの文字コードがEUCでjqueryのload()を使って読み込むと文字化けしてしまう。</h1><br />
+<br />
+<p>文字コードがEUCなのは昔のソースなのでしょうがない。<br />
+いまさら直しようがない。<br />
+jquery の load() だと化けるってのもしょうがないだろう。調べるだけ無駄だ。<br />
+ということで、php側で一旦データを全部読み込んで、それをJSON形式のデータにして、直接javascriptのスクリプト部分に埋め込むことにしよう。</p><p>データのイメージ：<br />
+一つ目のセレクトがこんな感じであって、選択すると、<br />
+<pre class="brush: html">&lt;select name="category_id"&gt;
+    &lt;option value="0"&gt;爬虫類&lt;/option&gt;
+    &lt;option value="1"&gt;鳥類&lt;/option&gt;
+    &lt;option value="2"&gt;昆虫option&gt;
+&lt;/select&gt;
+</pre>こんなようなデータが読み込まれて二つ目のセレクトが生成される。（鳥類だったら"1"のデータがセレクトになる）</p><pre class="brush: js">var per_array ='{
+    "0":{
+        "1":"トカゲ",
+        "2":"ワニ",
+        "3":"ザリガニ",
+    },
+    "1":{
+        "4":"スズメ",
+        "5":"ハト",
+        "6":"トンボ"
+    },
+    "2":{
+        "7":"コオロギ",
+        "8":"バッタ"
+    }
+}';
+</pre><br />
+<p>データベースにはこんな感じで入っている。</p><pre class="brush: shell">SELECT * FROM ikimono;
+ id | category_id |   name   
+----+-------------+----------
+  1 |           0 | トカゲ
+  2 |           0 | ワニ
+  3 |           0 | ザリガニ
+  4 |           1 | スズメ
+  5 |           1 | ハト
+  6 |           1 | トンボ
+  7 |           2 | コオロギ
+  8 |           2 | バッタ
+(8 rows)
+</pre><p>まず、データベースから値を読み込んで、JSON形式のデータを作成する。</p><pre class="brush: php">$query = "SELECT id, name, category_id FROM ikimono";
+$result = pg_query($pg, $query);
+$n = pg_numrows($result);
+if ($n){
+    for ($i=0;$i<$n;$i++){
+        $id = pg_result($result, $i, 0);
+        $name = pg_result($result, $i, 1);
+        $category_id = pg_result($result, $i, 2);
+        // ここで一個一個配列に入れておいて
+        $select_array[$category_id] .= '"'.$id.'":"'.$name.'",';
+    }
+}
+//　ここでカテゴリー別に {} で囲む
+foreach($select_array as $k => $v) {
+    $v = preg_replace('/,$/', '', $v);
+    $ikimono_data .= '"' . $k . '":{' . $v . '},';
+}
+$ikimono_data = preg_replace('/,$/', '', $ikimono_data);// 最後のカンマを削除
+</pre><p>で、ページ表示部分のjavascript部分をこんな感じで。<br />
+配列の定義のところに直接phpでデータを埋め込む。</p><br />
+<pre class="brush: js">&lt;script&gt;
+$(document).ready(function(){
+    $('select[name=category_id]').change(function(){
+        var category_id = $(this).val();
+        var ikimono_array ='{&lt;?php echo $ikimono_data; ?&gt;}';
+        var obj = jQuery.parseJSON(ikimono_array)[category_id];
+        var ikimono_select = '';
+        for (key in obj) {
+            ikimono_select += '&lt;option value="'+key+'"&gt;' + obj[key] + "&lt;/option&gt;";
+        }
+        $('select[name=ikimono_id]').empty().append(ikimono_select);
+    }).change();
+});
+&lt;/script&gt;
+</pre><p>二個目のセレクトは空っぽで用意しておく。</p><pre class="brush: html">&lt;select name="ikimono_id"&gt;
+&lt;/select&gt;
+</pre><p>もっと他にいい方法がありそうな予感が大いににするが、とりあえずこんなところで。</p>

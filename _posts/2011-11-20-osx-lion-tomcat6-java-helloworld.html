@@ -1,0 +1,118 @@
+---
+layout: post
+title: OSX Lion に Tomcat6 を入れて Java のサーブレットで HelloWorld するまでのすったもんだ
+date: '2011-11-20T17:11:00.003+09:00'
+author: 上田 剛
+tags:
+- OSX
+- Java
+- port
+modified_time: '2011-11-20T17:22:43.346+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-7319745691548723698
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/11/osx-lion-tomcat6-java-helloworld.html
+---
+
+<h1>OSX Lion に Tomcat6 を入れて Java のサーブレットで HelloWorld するまでのすったもんだ</h1>
+
+<p>そういえばLionにしてから自宅の開発環境がほったらかしになってたな、と、嫌な予感はしていたんだが、いざ始めてみると大仕事に。
+Java の SDK は入ってるはずだから Tomcat だけ入れればいいはず、と思って、</p>
+<pre class="brush: shell">
+sudo port install tomcat6
+</pre>
+
+<p>と打った最初っからつまづいた。
+まず MacPorts そのものがバージョン2.0.3にアップしていてこの selfupdate ができない。
+Xcode を4.1にバージョンアップしろ、と言われる。
+でApp Store で Xcode を検索してインストール。
+App Store の画面でインストール済みになって、それからどうすればいいのか分からず、途中作業中断もはさんで大幅に時間ロス。
+ふと見ると Application の中に Install Xcode というアイコンができているのでそれを起動で無事完了。
+MacPorts のバージョンアップをして、引き続き Tomcat を入れる。</p>
+
+<pre class="brush: shell">
+http://localhost:8080
+</pre>
+
+<p>を開いてみると得体の知れない
+EnterpriseDB
+とかいう画面が開くだけなので、（←なんすかね、これ）</p>
+
+<pre class="brush: shell">
+sudo vim /opt/local/share/java/tomcat6/conf/server.xml
+</pre>
+
+<p>として、8080になってるところを8090に変更。
+さらに、</p>
+
+<pre class="brush: shell">
+sudo vim /opt/local/share/java/tomcat6/conf/tomcat-users.xml
+</pre>
+
+<p>として、Tomcat のアプリケーションマネージャ画面に入るためのIDとパスワードを設定する。</p>
+
+<pre class="brush: xml">
+&lt;tomcat-users&gt;
+    &lt;role rolename="manager-gui"/&gt;
+    &lt;user username="myname" password="mypassword" roles="manager-gui"/&gt;
+&lt;/tomcat-users&gt;
+</pre>
+
+<p>HelloWorld 用のjava ファイルを用意して、</p>
+
+<pre class="brush: shell">
+javac HelloWorld.java 
+</pre>
+
+<p>とするも文字化け。</p>
+
+<pre class="brush: shell">
+vim ~/.profile
+</pre>
+
+<p>として、末尾に</p>
+
+<pre class="brush: shell">
+alias javac="javac -J-Dfile.encoding=UTF8"
+alias java="java -Dfile.encoding=UTF8"
+</pre>
+
+<p>を追加。文字化けは収まったが、コンパイルに失敗するので、
+さらに .profile に</p>
+
+<pre class="brush: shell">
+export CLASSPATH=/opt/local/share/java/tomcat6/lib/servlet-api.jar
+</pre>
+
+<p>を追加。</p>
+
+<pre class="brush: shell">
+javac HelloWorld.java 
+</pre>
+
+<p>とやって、HelloWorld.class を作成する。</p>
+
+<pre class="brush: shell">
+/opt/local/share/java/tomcat6/webapps
+</pre>
+
+<p>以下に、</p>
+
+<pre class="brush: shell">
+/opt/local/share/java/tomcat6/webapps/sample
+</pre>
+
+<p>というフォルダーを作り、さらにその中に、</p>
+
+<pre class="brush: shell">
+/opt/local/share/java/tomcat6/webapps/sample/WEB-INF
+/opt/local/share/java/tomcat6/webapps/sample/WEB-INF/classes
+/opt/local/share/java/tomcat6/webapps/sample/WEB-INF/src
+/opt/local/share/java/tomcat6/webapps/sample/WEB-INF/lib
+</pre>
+
+<p>とフォルダーを作って、 classes の中に HelloWorld.class を、src の中に HelloWorld.java を、 WEB-INF 直下に web.xml を置いて、</p>
+
+<pre class="brush: shell">
+http://localhost:8090/sample/Hello
+</pre>
+
+<p>で完成。</p>

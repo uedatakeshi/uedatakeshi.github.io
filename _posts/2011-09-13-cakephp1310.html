@@ -1,0 +1,139 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(10) レイアウトその2
+date: '2011-09-13T06:27:00.006+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:08:24.008+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-2446160148354562065
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1310.html
+---
+
+<h1>レイアウトその2</h1>
+
+<p>続いて、一般の人が登録したり、ログインして編集する画面（公開側）のレイアウトを作ります。
+通常公開側はデザイナーさんがカッチリデザインしてくるものですから、どっちみち最終的にそのデザインに合わせて調整することになると思います。
+ということで、ここでは admin 側をそのまま流用してファイルだけ作っておくことにします。</p>
+<p>まず、先ほど作った
+<pre class="brush: shell">
+/app/views/layouts/admin.ctp
+</pre>
+をそのまま同じ場所にコピーして、member.ctp にリネームします。
+<pre class="brush: shell">
+/app/views/layouts/member.ctp
+</pre>
+</p>
+<p>そして左メニューの部分を以下のように編集します。</p>
+<pre class="brush: php; highlight: [4,5,6]">
+            &lt;div class="actions"&gt;
+                &lt;h3&gt;&lt;?php __('メニュー'); ?&gt;&lt;/h3&gt;
+                &lt;ul&gt;
+                    &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('登録情報変更', true), array('controller'=&gt;'members','action' =&gt; 'edit'));?&gt;&lt;/li&gt;
+                    &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('退会', true), array('controller' =&gt; 'members', 'action' =&gt; 'delete')); ?&gt; &lt;/li&gt;
+                    &lt;li&gt;&lt;?php echo $this-&gt;Html-&gt;link(__('ログアウト', true), array('controller' =&gt; 'users', 'action' =&gt; 'logout')); ?&gt; &lt;/li&gt;
+                &lt;/ul&gt;
+            &lt;/div&gt;
+</pre>
+<p>member.ctp のヘッダー部の以下の部分、
+<pre class="brush: php; highlight: [9]">
+&lt;head&gt;
+    &lt;?php echo $this-&gt;Html-&gt;charset(); ?&gt;
+    &lt;title&gt;
+        &lt;?php echo $title_for_layout; ?&gt;
+    &lt;/title&gt;
+    &lt;?php
+        echo $this-&gt;Html-&gt;meta('icon');
+
+        echo $this-&gt;Html-&gt;css('cake.generic');
+
+        echo $scripts_for_layout;
+    ?&gt;
+&lt;/head&gt;
+</pre>
+cssを指定しているところを以下のように書き換えます。</p>
+<pre class="brush: php">
+        echo $this-&gt;Html-&gt;css('member');
+</pre>
+<p>
+これで出力されるソースは
+<pre class="brush: html">
+&lt;link href="/~myname/cake/css/member.css" type="text/css" rel="stylesheet"&gt;
+</pre>
+となります。</p>
+<p>css の置き場所は /app/webroot/css/ ですので、
+<pre class="brush: shell">
+/app/webroot/css/cake.generic.css
+</pre>
+をそのまま同じ場所にコピーして、member.css にリネームします。</p>
+<pre class="brush: shell">
+/app/webroot/css/memmber.css
+</pre>
+<p>最後に、admin の場合と、member の場合で、自動でレイアウトが切り替わるように設定します。</p>
+<p>まず、前回 member_controller.php に入れた、
+<pre class="brush: php">
+    function beforeFilter() {
+        $this->layout = 'admin';
+    }
+</pre>
+を削除しておきます。</p>
+<p>そして、/app 直下に app_controller.php を配置します。</p>
+<pre class="brush: shell">
+cd Sites/cake
+cp cake/libs/controller/app_controller.php app/
+</pre>
+<p>今コピーした、/app/app_controller.php に以下を追加します。</p>
+<pre class="brush: php; highlight: [37,38,39,40,41,42,43]">
+&lt;?php
+/**
+ * Application level Controller
+ *
+ * This file is application-wide controller file. You can put all
+ * application-wide controller-related methods here.
+ *
+ * PHP versions 4 and 5
+ *
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ *
+ * Licensed under The MIT License
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright     Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
+ * @package       cake
+ * @subpackage    cake.cake.libs.controller
+ * @since         CakePHP(tm) v 0.2.9
+ * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
+ */
+
+/**
+ * This is a placeholder class.
+ * Create the same file in app/app_controller.php
+ *
+ * Add your application-wide methods in the class below, your controllers
+ * will inherit them.
+ *
+ * @package       cake
+ * @subpackage    cake.cake.libs.controller
+ * @link http://book.cakephp.org/view/957/The-App-Controller
+ */
+class AppController extends Controller {
+
+    function beforeFilter(){
+        if (!empty($this->params['admin'])) {
+            $this->layout = "admin";
+        }else{
+            $this->layout = "member";
+        }
+    }
+
+}
+</pre>
+<p>これで admin の時と admin でない時でレイアウトが切り替わります。</p>
+
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-14-cakephp1311 %}">>>次のページ「確認画面その1」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-11-cakephp139 %}">&lt;&lt;前のページ「レイアウトその1」へ</a></li>
+</ul>
