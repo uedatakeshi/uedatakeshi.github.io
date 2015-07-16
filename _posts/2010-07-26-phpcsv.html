@@ -1,0 +1,26 @@
+---
+layout: post
+title: phpでカンマ区切りのcsvを出力する
+date: '2010-07-26T15:31:00.002+09:00'
+author: 上田 剛
+tags:
+- php
+modified_time: '2010-07-26T15:33:12.146+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8410401498898355790
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/07/phpcsv.html
+---
+
+とりあえず、データの中に改行は含まれない、という前提にしてしまえば比較的楽なのではないかと。
+いうことで、暫定版ですが。。
+
+<pre class="brush: php">
+function add_comma($str) {
+    if (preg_match('/"/', $str)) {
+        $str = preg_replace('/"/', '""', $str);
+    }
+    if (preg_match('/[,"]/', $str)) {
+        $str = '"' . $str . '"';
+    }
+    return $str;
+}
+</pre>

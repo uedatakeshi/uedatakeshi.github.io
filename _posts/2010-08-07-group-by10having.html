@@ -1,0 +1,70 @@
+---
+layout: post
+title: GROUP BYを使った表の数値の合計あって、その合計が10個以上とかいう条件で抽出したい時にHAVING句を使う
+date: '2010-08-07T11:47:00.001+09:00'
+author: 上田 剛
+tags:
+- MySQL
+- Postgres
+modified_time: '2010-08-07T11:47:48.735+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1867156209023796958
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/08/group-by10having.html
+---
+
+例えばメンバーIDがあって、それに紐付いたポイント数が複数保存してあるようなテーブルがあるとする。<br />
+<pre class="brush: shell">
+ member_id | point
+-----------+-------
+         4 |     2
+         4 |     2
+         4 |     3
+         4 |     3
+         4 |     3
+         4 |     1
+         4 |     3
+         4 |     2
+         8 |     2
+         8 |     0
+         4 |     1
+         8 |     3
+         4 |     6
+         8 |     0
+</pre>
+
+これをGROUP BY を使って合計を出すと、<br />
+<pre class="brush: sql">
+SELECT member_id,SUM(point) AS sum FROM points 
+GROUP BY member_id;
+</pre>
+<br />
+<pre class="brush: shell">
+ member_id | sum
+-----------+-----
+         4 |  43
+         8 |   7
+</pre>
+こんな結果になるわけですが、この結果表をさらに、合計が10個以上、とかそういう条件で絞り込みたい訳です。<br />
+もしかしてこんなのあり？<br />
+<pre class="brush: sql">
+SELECT member_id, SUM(point) AS sum FROM points 
+WHERE sum > 10 
+GROUP BY member_id;
+</pre>
+とかやってみましたが、これは、<br />
+<pre class="brush: shell">
+ERROR:  column "sum" does not exist
+</pre>
+になります。だめです。<br />
+ということで、HAVING句を使って、<br />
+<pre class="brush: sql">
+SELECT member_id, SUM(point) AS sum FROM points 
+GROUP BY member_id
+HAVING SUM(point) > 10;
+</pre>
+というように書きます。<br />
+結果。<br />
+<pre class="brush: shell">
+ member_id | sum
+-----------+-----
+         4 |  43
+</pre>

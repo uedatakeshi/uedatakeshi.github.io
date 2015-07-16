@@ -1,0 +1,53 @@
+---
+layout: post
+title: くるくる回るGIFアニメを用意して、submitボタンをクリックした時にくるくる回したい
+date: '2010-11-12T15:23:00.004+09:00'
+author: 上田 剛
+tags:
+- jQuery
+modified_time: '2010-11-12T15:28:02.175+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-4819652960149670875
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/11/gifsubmit.html
+---
+
+はぁ～丸二日くらい悩んだかも。<br />
+不毛だな。<br />
+ま、とにかく html をこんな感じにしておく。<br />
+<pre class="brush: html;">
+&lt;input id="next_button" type="submit" value="つぎへ" /&gt;
+&lt;span id="loading" style="display:none;"&gt;&lt;img src="img/loader.gif" /&gt; 処理中&lt;/span&gt;
+</pre>
+<br />
+submitボタンの後ろにGIFアニメ画像を置いておいて、隠しておいて、クリックされたら出してやろう、というねらいだ。<br />
+<br />
+で、最初俺はこう書いていた<br />
+<pre class="brush: js; highlight: [5]">
+$('input#next_button').click(function(e) {
+  e.preventDefault();
+  $('#next_button').hide(); 
+  $('#loading').show();
+  $('form').submit();
+});
+</pre>
+
+クリックで、<br />
+サブミットボタンのデフォルトの動作を禁止して、<br />
+サブミットボタンを消し、<br />
+ローディング画像を出し、<br />
+そしてフォームをサブミット！<br />
+<br />
+これはまあ、動くんだが、IEで見ると何故かGIFアニメのアニメーションが動かない。静止してるのだ。<br />
+ということで順番を入れ替えてみた。<br />
+<br />
+<pre class="brush: js; highlight: [3]">
+$('input#next_button').click(function(e) {
+  e.preventDefault();
+  $('form').submit();
+  $('#next_button').hide(); 
+  $('#loading').show();
+});
+</pre>
+先にサブミット。<br />
+これだと動く。<br />
+謎。<br />
+とにかく、submit() が先だ、先！<br />

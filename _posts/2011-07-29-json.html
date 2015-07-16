@@ -1,0 +1,55 @@
+---
+layout: post
+title: JSON形式の過去に一体何があったのか？
+date: '2011-07-29T16:42:00.000+09:00'
+author: 上田 剛
+tags:
+- Javascript
+- php
+modified_time: '2011-07-29T16:43:06.232+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-976974377676609172
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/07/json.html
+---
+
+それにしても分からないのはJSON形式だ。<br />
+今phpで配列からJSON形式のデータを作ろうってことになったら、普通にphp5.2以上を使っている人たちは、<br />
+普通に json_encode を使うんだろう。悩む必要はない。<br />
+それ以外のちょっと前の環境の人だって、 pear が使えればそれでやっちゃってるんだろう。<br />
+だから世の中の人達は本当に正しいJSON形式なんてものに興味も関心もないに違いない。<br />
+それが自動的に作ってくれるんだから。<br />
+で、pearもねぇ、phpはいまだに4.3という、絶望のどん底のような環境にいる私は仕方なく自分でJSON形式を作ろうとすることになるんだが、<br />
+一昔前までは、<br />
+ { とか [ とか "" とか '' とか結構いい加減でもJSONとして動いていたらしいフシがある。<br />
+jQuery のプラグインです、なんつって配布されてるものでも jQuery1.2 くらいの時代のものだと、 key を""で囲っていなかったりして、これを最新の jQuery で動かすとエラーになる。<br />
+つまり、その時代に結構いい加減に作られていたJSON形式の一体どこがいけないのか、自分で分かってなきゃ作れないってことなんだ。<br />
+ということでJSONとはこれだ！　というのがこのページらしいんだが。。。<br />
+<pre class="brush: shell">
+http://json.org/
+</pre>
+さっぱりわからん（笑）。<br />
+おそらくしかしこれは、配列は [] で囲め、 [] の中にはなにがしかの要素が入る。<br />
+オブジェクトは {} で囲め、その中にはキーと値をコロンでつないだものが入る、複数入れるならカンマで句切れ。<br />
+っていうようなことなんだろう。<br />
+ということでこちらの<br />
+<pre class="brush: shell">
+http://d.hatena.ne.jp/kovaio/20060610
+</pre>
+2006年の古い記事の関数を書き換えてみました。<br />
+<pre class="brush: php">
+$json = "[".toJson($data)."]";
+
+function toJson($data) {   
+ $json = array();
+ foreach ($data as $string => $value) {
+  $key = (is_numeric($string) ? "" : "\"$string\":");
+
+  if (is_array($value)) {
+   $json[] = sprintf("%s {{ "{%" }}s}", $key, toJson($value));
+  } else {
+   $json[] = sprintf("%s \"%s\"", $key, addslashes($value));
+  }
+ }
+ return implode(", ", $json);
+}
+</pre>
+JSON形式に何があったのか知らないが、こんだけ絶望的に変わってるのに、なんで誰も憤慨していないのかが不思議だ。<br />

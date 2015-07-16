@@ -1,0 +1,67 @@
+---
+layout: post
+title: OSX の MacPorts で入れた mysql-connector-java は一体どうやって使えばいいのか？
+date: '2011-12-26T17:57:00.001+09:00'
+author: 上田 剛
+tags:
+- MySQL
+- OSX
+- Java
+modified_time: '2011-12-26T18:00:19.775+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1224944257488676262
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/12/osx-macports-mysql-connector-java.html
+---
+
+<h1>OSX の MacPorts で入れた mysql-connector-java は一体どうやって使えばいいのか？</h1>
+
+<p>引き続き java の servlet でのデータベース接続をテストしていた時のことである。<br />
+tomcat も MacPorts で入れたんだから Connector/J も当然 MacPortsで 入れるべきだろう、ということで、
+
+<pre class="brush: shell">
+sudo port install mysql-connector-java
+</pre>
+
+こうした訳ですが、これはどうやら以下の場所に設置されるようです。</p>
+<pre class="brush: shell">
+/opt/local/share/java/mysql-connector-java-5.0.jar
+</pre>
+
+<p>で、こいつをどう使ったらいいのか？<br />
+まずはコンパイルする時のために自分の.profile にパスを追加。<br />
+エディターで、
+<pre class="brush: shell">
+vim ~/.profile  
+</pre>
+として、以下を追加。</p>
+<pre class="brush: shell">
+export CLASSPATH=/opt/local/share/java/tomcat6/lib/servlet-api.jar
+export CLASSPATH=/opt/local/share/java/mysql-connector-java-5.0.jar:$CLASSPATH
+export CLASSPATH=$CLASSPATH:.
+</pre>
+<p>パスが通ったかどうか、
+<pre class="brush: shell">
+echo $CLASSPATH
+</pre>
+して確認。
+<p>これでコンパイルは通る。</p>
+
+<p>で、tomcat上で、作ったservletを実行するためには、
+<pre class="brush: shell">
+/opt/local/share/java/mysql-connector-java-5.0.jar
+</pre>
+このファイルを、
+<pre class="brush: shell">
+/opt/local/share/java/tomcat6/webapps/sample/WEB-INF/lib
+</pre>
+以下に置く（sampleは自分で作ったservlet置き場）。</p>
+<p>もしくは、
+<pre class="brush: shell">
+/opt/local/share/java/tomcat6/lib/
+</pre>
+以下に置く。</p>
+<p>シンボリックリンクでもいけるので、
+<pre class="brush: shell">
+cd /opt/local/share/java/tomcat6/lib
+sudo ln -s /opt/local/share/java/mysql-connector-java-5.0.jar mysql-connector-java-5.0.jar
+</pre>
+こうしておけばよいかもしれない。</p>

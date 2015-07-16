@@ -1,0 +1,163 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(18) 編集処理
+date: '2011-10-03T19:09:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:05:54.493+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5676261197805354035
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/10/cakephp1318.html
+---
+
+<h1>編集画面</h1>
+
+<p>続けて編集画面もやってしまいます。 edit.ctp を開いて、
+以下のフォーム開始を、
+<pre class="brush: php">
+&lt;?php echo $this-&gt;Form-&gt;create('Member');?&gt;
+</pre>
+以下のように変更します。</p>
+<pre class="brush: php">
+&lt;?php echo $this-&gt;Form-&gt;create('Member', array('type' =&gt; 'file'));?&gt;
+&lt;div style="display:none;"&gt;
+    &lt;?php echo $this-&gt;Form-&gt;input('img1', array('type'=&gt;'hidden')); ?&gt;
+    &lt;?php echo $this-&gt;Form-&gt;input('img2', array('type'=&gt;'hidden')); ?&gt;
+&lt;/div&gt;
+</pre>
+<p>以下のフォームのメインの部分は、
+<pre class="brush: php">
+    &lt;?php
+        echo $this-&gt;Form-&gt;input('id');
+        echo $this-&gt;Form-&gt;input('email');
+        echo $this-&gt;Form-&gt;input('password');
+        echo $this-&gt;Form-&gt;input('type_id');
+        echo $this-&gt;Form-&gt;input('birthday');
+        echo $this-&gt;Form-&gt;input('img1');
+        echo $this-&gt;Form-&gt;input('img2');
+        echo $this-&gt;Form-&gt;input('Favorite');
+    ?&gt;
+</pre>
+ add.ctp と同じになるように修正しておきます。</p>
+<pre class="brush: php">
+    &lt;?php
+        echo $this-&gt;Form-&gt;input('email',array('label' =&gt; array('text'=&gt;'メールアドレス')));
+        echo $this-&gt;Form-&gt;input('password',array('label' =&gt; array('text'=&gt;'パスワード')));
+        echo $this-&gt;Form-&gt;input('type_id',array('label' =&gt; array('text'=&gt;'種別')));
+        echo $this-&gt;Form-&gt;input('birthday',array('dateFormat'=&gt;'YMD','maxYear'=&gt;date('Y'),'minYear'=&gt;date('Y')-100,'monthNames'=&gt;false, 'label' =&gt; array('text'=&gt;'誕生日')));
+        echo $this-&gt;Form-&gt;input('solid1', array('type'=&gt;'file', 'label' =&gt; '画像１'));
+        echo $this-&gt;Form-&gt;input('solid2', array('type'=&gt;'file', 'label' =&gt; '画像２'));
+        echo $this-&gt;Form-&gt;input('favorites', array('multiple'=&gt;'checkbox', 'label' =&gt; '好きな物'));
+    ?&gt;
+</pre>
+<p>次に、
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('solid1', array('type'=&gt;'file', 'label' =&gt; '画像１'));
+</pre>
+となっている画像のところを、以下のようにちょっと変えます。</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('solid1', array('type'=&gt;'file', 'label' =&gt; '画像１'));
+        if (!$this-&gt;Form-&gt;error('solid1')){
+            if ($this-&gt;data['Member']['img1']){
+                echo '&lt;div class="input img1"&gt;&lt;label for="MemberImg1"&gt;&lt;/label&gt;';
+                echo $this-&gt;Html-&gt;image("/files/".$this-&gt;data['Member']['img1']);
+                echo '&lt;/div&gt;';
+            }
+        }
+</pre>
+<p>
+出力されるソースはこんなになります。</p>
+<pre class="brush: html">
+&lt;div class="input file required"&gt;
+    &lt;label for="MemberSolid1"&gt;画像１&lt;/label&gt;
+    &lt;input type="file" id="MemberSolid1" name="data[Member][solid1]"&gt;
+&lt;/div&gt;
+&lt;div class="input img1"&gt;
+    &lt;label for="MemberImg1"&gt;&lt;/label&gt;
+    &lt;img alt="" src="/cake/files/xxxxxxxxxxxxxxxxx.jpg"&gt;
+&lt;/div&gt;
+</pre>
+<p>
+続いてコントローラを修正します。</p>
+<p>デフォルトでは、
+<pre class="brush: php">
+    function edit($id = null) {
+        if (!$this-&gt;Session-&gt;check('Member.id')) {
+            $this-&gt;redirect(array('action'=&gt;'login'));
+        }
+
+        if (!$id && empty($this-&gt;data)) {
+            $this-&gt;Session-&gt;setFlash(__('Invalid member', true));
+            $this-&gt;redirect(array('action' =&gt; 'index'));
+        }
+        if (!empty($this-&gt;data)) {
+            if ($this-&gt;Member-&gt;save($this-&gt;data)) {
+                $this-&gt;Session-&gt;setFlash(__('The member has been saved', true));
+                $this-&gt;redirect(array('action' =&gt; 'index'));
+            } else {
+                $this-&gt;Session-&gt;setFlash(__('The member could not be saved. Please, try again.', true));
+            }
+        }
+        if (empty($this-&gt;data)) {
+            $this-&gt;data = $this-&gt;Member-&gt;read(null, $id);
+        }
+        $types = $this-&gt;Member-&gt;Type-&gt;find('list');
+        $favorites = $this-&gt;Member-&gt;Favorite-&gt;find('list');
+        $this-&gt;set(compact('types', 'favorites'));
+    }
+</pre>
+となっているのを、
+<pre class="brush: php; highlight: [1,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]">
+    function edit() {
+        if (!$this-&gt;Session-&gt;check('Member.id')) {
+            $this-&gt;redirect(array('action'=&gt;'login'));
+        }
+        if (!empty($this-&gt;data)) {
+            $this-&gt;data['Favorite']['Favorite'] = $this-&gt;data['Member']['favorites'];
+            if ($this-&gt;data['Member']['solid1']['type']){
+                $this-&gt;data['Member']['img1'] = $this-&gt;_imgUpload('solid1');
+            }
+            if ($this-&gt;data['Member']['solid2']['type']){
+                $this-&gt;data['Member']['img2'] = $this-&gt;_imgUpload('solid2');
+            }
+            if ($this-&gt;Member-&gt;save($this-&gt;data)) {
+                $this-&gt;Session-&gt;setFlash(__('会会員情報を更新しました', true));
+                $this-&gt;redirect(array('action' =&gt; 'menu'));
+            } else {
+                $this-&gt;Session-&gt;setFlash(__('エラーがあります', true));
+            }
+        }
+        if (empty($this-&gt;data)) {
+            $this-&gt;data = $this-&gt;Member-&gt;read(null, $this-&gt;Session-&gt;read('Member.id'));
+            if ($this-&gt;data['Favorite']){
+                foreach ($this-&gt;data['Favorite'] as $k =&gt; $v){
+                    $this-&gt;data['Member']['favorites'][] = $v['id'];
+                }
+            }
+        }
+        $types = $this-&gt;Member-&gt;Type-&gt;find('list');
+        $favorites = $this-&gt;Member-&gt;Favorite-&gt;find('list');
+        $this-&gt;set(compact('types', 'favorites'));
+    }
+</pre>
+と編集します。</p>
+<p>セッションで認証するので、
+<pre class="brush: php">
+function edit($id = null) {
+</pre>
+の引数部分はなしにしてます。その代わりに、$this-&gt;Member-&gt;read に対して、セッションの Member.id を渡しています。</p>
+<p>他は add の方と同じですが、
+初期に編集画面へ来た時の、DBからデータを読む処理の後に、その「好きな物」データを変換する処理を入れています。上記20〜24行目。
+Favorite を favorites に入れ直しています。
+これにより、
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('favorites', array('multiple'=&gt;'checkbox', 'label' =&gt; '好きな物'));
+</pre>
+この書き方のビューに反映されます。</p>
+<p>チェックボックスにチェックが入っているを確認します。</p>
+
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1319.html">>>次のページ「退会処理」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1317.html">&lt;&lt;前のページ「画像アップロード」へ</a></li>
+</ul>

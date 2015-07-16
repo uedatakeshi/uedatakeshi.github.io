@@ -1,0 +1,156 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(13) checkbox、 戻るボタン、年月セレクト、完了画面
+date: '2011-09-16T05:22:00.003+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:07:15.669+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-4942351208360144489
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1313.html
+---
+
+<h1>checkbox、 戻るボタン、年月セレクト、完了画面</h1>
+
+<p>次に、add.ctp 入力フォームの、Favorite（好きな物）が multiple セレクトになってるのを直します。<br />
+日本では複数選択にセレクトなんてほとんど使われないですよね。<br />
+こうなっているのを、
+<pre class="brush: php">
+        echo $this->Form->input('Favorite');
+</pre>
+こうします。</p>
+<pre class="brush: php">
+        echo $this->Form->input('Favorite', array('multiple'=>'checkbox', 'label' => '好きな物'));
+</pre>
+<p>
+これでとりあえずチェックボックスになるんですが、<br />
+どうも一つのチェックで一行になっているので収まりが悪いです。<br />
+横に並べたいですね。<br />
+生成されたHTMLを確認すると、以下のようになっています。</p>
+<pre class="brush: html">
+&lt;div class="input select"&gt;
+    &lt;label for="FavoriteFavorite"&gt;好きな物&lt;/label&gt;
+    &lt;input type="hidden" id="FavoriteFavorite" value="" name="data[Favorite][Favorite]"&gt;
+    &lt;div class="checkbox"&gt;
+        &lt;input type="checkbox" id="FavoriteFavorite1" value="1" name="data[Favorite][Favorite][]"&gt;
+        &lt;label for="FavoriteFavorite1"&gt;apple&lt;/label&gt;
+    &lt;/div&gt;
+    &lt;div class="checkbox"&gt;
+        &lt;input type="checkbox" id="FavoriteFavorite2" value="2" name="data[Favorite][Favorite][]"&gt;
+        &lt;label for="FavoriteFavorite2"&gt;orange&lt;/label&gt;
+    &lt;/div&gt;
+    &lt;div class="checkbox"&gt;
+        &lt;input type="checkbox" id="FavoriteFavorite3" value="3" name="data[Favorite][Favorite][]"&gt;
+        &lt;label for="FavoriteFavorite3"&gt;grape&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</pre>
+<p>チェックボックス一つにつき一つの div で囲まれています。<br />
+css を書くのもしんどいので、jQuery で処理することにします。<br />
+jQuery をダウロードして解凍しておいてください。</p>
+<ul>
+<li><a href="http://jquery.com/">jQuery</a></li>
+</ul>
+
+<p>/app/webroot/js 以下に jquery.js としてコピーしておきます。<br />
+で、さらに /app/webroot/js 以下に、新規に util.js という名前でファイルを作ります。</p>
+<p>中身は、こんな感じで。
+<pre class="brush: js">
+$(document).ready(function() {
+    $('div.checkbox').css('display','inline');
+    $(':checkbox').css('float','none');
+});
+</pre>
+<p>周りを囲んでいる div を inline 表示に変えて、左に float しているチェックボックスの float を解除しているだけです。</p>
+
+<p>で、 add.ctp の一番上に、
+<pre class="brush: php">
+&lt;?php echo $javascript-&gt;link(array('jquery','util'), false); ?&gt;
+</pre>
+を追加します。</p>
+<p>さらに、members_controller.php の 上の方に $helpers を追加します。</p>
+<pre class="brush: php; highlight: [5]">
+&lt;?php
+class MembersController extends AppController {
+
+    var $name = 'Members';
+    var $helpers = array('Javascript');
+
+    function index() {
+        $this-&gt;Member-&gt;recursive = 0;
+        $this-&gt;set('members', $this-&gt;paginate());
+    }
+</pre>
+<p>ブラウザで確認してみると、チェックボックスが横に並んでいます。<br />
+これはあくまでその場しのぎの付け焼刃ですので、本来はきちんとデザイナーさんに css を書いてもらいましょう。</p>
+
+<p>ついでなので、さきほどのJavascriptの util.js の    $(document).ready(function() {});の中に、以下を追加しておきます。</p>
+<pre class="brush: js">
+    $('#back').click(function(){
+        $('#MemberMode').val('back');
+        $("#MemberConfirm").submit();
+    });
+</pre>
+<p>
+解説：<br />
+1行目：id="back" のボタンをクリックしたら<br />
+2行目：id="MemberMode" の valueを "back" にして(hidden で追加した mode の value です）<br />
+3行目：id="MemberConfirm" のフォームをサブミットする（確認画面の form です）
+</p>
+<p>confirm.ctp の一行目に以下を追加します。</p>
+<pre class="brush: php">
+&lt;?php echo $javascript-&gt;link(array('jquery','util'), false); ?&gt;
+</pre>
+<p>members_controller.php の前回追加した if ～ else の中に以下の elseif を追加します。{} の中は空でいいです。</p>
+<pre class="brush: php; highlight: [3]">
+            if ($this-&gt;data['Member']['mode'] == 'confirm') {
+                //・・・
+            } elseif ($this-&gt;data['Member']['mode'] == 'back') {
+
+            } else {
+                //・・・
+            }
+</pre>
+
+<p>これで、確認画面から入力画面への「戻る」ボタンが動くようになります。<br />
+いろいろエラーが出ているかもしれませんが、たいした問題ではないので気にしないで進みます。</p>
+
+<p>あとは、誕生日の入力フォームが洋風で気に入らないので、変更します。</p>
+<p>今こうなってるのを、
+<pre class="brush: php">
+        echo $form-&gt;input('birthday');
+</pre>
+以下に変更します。</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('birthday',array('dateFormat'=&gt;'YMD','maxYear'=&gt;date('Y'),'minYear'=&gt;date('Y')-100,'monthNames'=&gt;false, 'label' =&gt; array('text'=&gt;'誕生日')));
+</pre>
+
+<p>最後、一応公開側は完了画面を出すことにするので、「登録されました」みたいな適当なビューを complete.ctp という名前で作っておきます。</p>
+<pre class="brush: php">
+&lt;div class="members form"&gt;
+    &lt;h2&gt;&lt;?php __('会員登録'); ?&gt;&lt;/h2&gt;
+
+    &lt;p&gt;登録されました。&lt;/p&gt;
+&lt;/div&gt;
+</pre>
+<p>そして、members_controller.php の add アクションの save の後の、
+<pre class="brush: php">
+                    $this-&gt;redirect(array('action' =&gt; 'index'));
+</pre>
+となっているのを、
+<pre class="brush: php">
+                    $this-&gt;redirect(array('action' =&gt; 'complete'));
+</pre>
+に変更し、さらに、
+<pre class="brush: php">
+function complete() {
+}
+</pre>
+を追加しておきます。<br />
+ブラウザで完了画面が表示されることを確認します。
+</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="">>>次のページ「checkbox の validate」へ</a></li>
+<li><a href="">&lt;&lt;前のページ「確認画面その2」へ</a></li>
+</ul>

@@ -1,0 +1,127 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(3) データベース接続
+date: '2011-09-05T16:11:00.003+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:10:23.408+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5656095374696945588
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp133.html
+---
+
+<h1>データベース接続</h1>
+<p>
+データベースに接続するための設定を行います。<br />
+設定ファイルは /app/config/database.php.default を書き換えて、/app/config/database.php にリネームするだけなので、エディターで開いて編集すればいいのですが、ここでは console の cake コマンドを使ってやってみます。<br />
+大元の /cake/console の中にあるのがcakeコマンドです。<br />
+自分のhomeディレクトリから、
+<pre class="brush: shell">
+cd Sites/cake/cake/console
+./cake
+</pre>
+と打てば
+<pre class="brush: shell">
+Welcome to CakePHP v1.3.11 Console
+---------------------------------------------------------------
+Current Paths:
+ -app: app
+ -working: /Users/myname/Sites/cake/app
+ -root: /Users/myname/Sites/cake
+ -core: /Users/myname/Sites/cake
+
+Changing Paths:
+your working path should be the same as your application path
+to change your path use the '-app' param.
+Example: -app relative/path/to/myapp or -app /absolute/path/to/myapp
+
+Available Shells:
+ acl [CORE]                             i18n [CORE]                            
+ api [CORE]                             schema [CORE]                          
+ bake [CORE]                            testsuite [CORE]                       
+ console [CORE]                         
+
+To run a command, type 'cake shell_name [args]'
+To get help on a specific command, type 'cake shell_name help'
+</pre>
+と表示され、とりあえず動くのが分かります。
+</p>
+<p>
+で、一応このcakeコマンドにパスを通しておきます。
+<pre class="brush: shell">
+vim .profile
+</pre>
+としてvim エディターを起動し、
+<pre class="brush: shell">
+export PATH=/Users/myname/Sites/cake/cake/console:$PATH
+</pre>
+の一行を追加します。<br />
+ターミナルに戻って、
+<pre class="brush: shell">
+. .profile
+</pre>
+して、
+<pre class="brush: shell">
+printenv PATH
+</pre>
+で、パスを確認します。
+<pre class="brush: shell">
+/Users/myname/Sites/cake/cake/console:
+</pre>
+と入っていればOK.
+</p>
+<p>
+基本、自分の app フォルダーの中で作業するのがいいです。
+<pre class="brush: shell">
+cd Sites/cake/app
+cake bake
+</pre>
+別の場所にいる場合は、 app の場所を指定します。今自分がhomeにいるんだったら、
+<pre class="brush: shell">
+cake -app Sites/cake/app bake
+</pre>
+とすると、
+<pre class="brush: shell">
+Welcome to CakePHP v1.3.11 Console
+---------------------------------------------------------------
+App : app
+Path: /Users/myname/Sites/cake/app
+---------------------------------------------------------------
+Your database configuration was not found. Take a moment to create one.
+---------------------------------------------------------------
+Database Configuration:
+---------------------------------------------------------------
+Name:  
+[default] > 
+</pre>
+というように対話式の設定画面になりますので、必要な項目を入力します。
+<pre class="brush: shell">
+---------------------------------------------------------------
+The following database configuration will be created:
+---------------------------------------------------------------
+Name:         default
+Driver:       mysql
+Persistent:   false
+Host:         localhost
+User:         cake_user
+Pass:         ********
+Database:     cake_db
+Encoding:     utf8
+---------------------------------------------------------------
+</pre>
+という感じに、データベースの設定を入れて[y]すると、自動で /app/config/database.php
+が作られます。
+</p>
+<p>
+ブラウザで http://localhost/~myname/cake/ を開いてみると
+<pre class="brush: shell">
+Your database configuration file is present.
+Cake is able to connect to the database.
+</pre>
+と出てるはずです。
+</p>
+<br />
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp134 %}">>>次のページ「schemaを作る」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp132 %}">&lt;&lt;前のページ「CakePHPの設置」へ</a></li>
+</ul>

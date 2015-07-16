@@ -1,0 +1,29 @@
+---
+layout: post
+title: テーブルの一番右端の列の値だけを取り出したい
+date: '2010-10-01T12:32:00.001+09:00'
+author: 上田 剛
+tags:
+- jQuery
+modified_time: '2010-10-01T12:32:55.456+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5776398884400317510
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/10/blog-post.html
+---
+
+テーブルの一番右端の列の値だけを取り出したい
+
+テーブルの一番右端の列に文字が入っていて、中にはリンクが貼られている場合もあるとする。<br />
+リンクが貼られている場合はそのURLを、文字だけの場合は、文字を、取り出したい。<br />
+<pre class="brush: js">
+var val=''; 
+$('tr td:last-child').each(function(n){ 
+    if ($(this).find('a').attr('href') != '') { 
+        val += $(this).find('a').attr('href')+"\n";
+    } else {
+        val += $(this).text()+"\n";
+    }
+});
+$('body').append('<div id="result">' + val + '</div>');
+</pre>
+<br />
+こんな感じにしてみた。<br />

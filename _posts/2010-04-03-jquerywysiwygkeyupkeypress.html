@@ -1,0 +1,156 @@
+---
+layout: post
+title: jQueryのWYSIWYGエディターでkeyupとかkeypressのイベントを取り出す
+date: '2010-04-03T10:34:00.015+09:00'
+author: 上田 剛
+tags:
+- jQuery
+modified_time: '2010-04-03T11:39:14.842+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-4712168314796679587
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/04/jquerywysiwygkeyupkeypress.html
+---
+
+今週ずーっとやってた不毛なjQueryアプリですが、一番はまってたWYSIWYGエディター部分についてまとめておきます。<br />
+WYSIWYGエディターというと世間ではFCKeditorが有名ですが、まあ、あれはちょっと重いんじゃない？<br />
+ってことで、jQueryのプラグインで探す訳ですが、どーもね、これっていうのがない訳で。<br />
+<br />
+最初に使ってみたのがこれ<br />
+<a href="http://plugins.jquery.com/project/lwRTE">LIGHTWEIGHT RICH TEXT EDITOR (RTE / WYSIWYG) PLUGIN FOR JQUERY</a>
+<br /><br />
+使い方はこんな感じ
+<pre class="brush: js">
+&lt;textarea name="info1" cols="100" rows="10"  class="rte1"&gt;&lt;/textarea&gt;
+
+&lt;script type="text/javascript"&gt;
+$(document).ready(function() {
+ $('.rte1').rte({
+  css: ['default.css'],
+  controls_rte: rte_toolbar,
+  controls_html: html_toolbar
+ });
+});
+&lt;/script&gt;
+</pre>
+jquery.rte.tb.js にツールバーの設定がまとめられてるのでそれを編集する。<br />
+firebugで見てるとキーを入力する度に
+
+<pre class="brush: bash">！keyup イベントでは charCode プロパティの値には意味がないため使用すべきではありません。</pre>
+
+の警告が出るのがいまいちです。<br />
+<br />
+次がこれ<br />
+<a href="http://plugins.jquery.com/project/jHtmlArea">JHTMLAREA - WYSIWYG HTML EDITOR FOR JQUERY</a>
+<br /><br />
+使い方はこんな感じ
+<pre class="brush: js">
+&lt;script type="text/javascript"&gt;
+$(function() {
+ $("#info").htmlarea({
+  toolbar: [
+   ["bold", "italic", "underline", "|", "forecolor"],
+   ["p", "h1", "h2", "h3", "h4", "h5", "h6"],
+   ["link", "unlink", "|", "image"],
+   [{
+    css: "custom_disk_button",
+    text: "Save",
+    action: function(btn) {
+     alert('SAVE!\n\n' + this.toHtmlString());
+    }
+   }]
+  ],
+  loaded: function() {
+   //
+  }
+ });
+});
+&lt;/script&gt;
+
+
+&lt;textarea id="info" cols="50" rows="15"&gt;&lt;/textarea&gt;
+</pre>
+
+loaded とかでエディターが起動した後になにか処理を入れられる。<br />
+ドキュメントがあまり詳しくなくていまいちですかねー。<br />
+Microsoft Public License　というあまり聞いたことのない？ライセンスです。<br />
+<br />
+最後にこれ<br />
+<a href="http://plugins.jquery.com/project/HtmlBox">HTMLBOX</a><br />
+<br />
+使い方はこんな感じ
+<pre class="brush: js">
+&lt;textarea id='hb'&gt;&lt;/textarea&gt;
+
+&lt;script language="Javascript" type="text/javascript"&gt;
+var hb = $("#hb").htmlbox({
+    buttons:[
+      ["separator_dots","bold","italic","underline"]
+ ],
+ icons:"default",
+ skin:"green"
+});
+&lt;/script&gt;
+</pre>
+
+
+一応PDFのドキュメントがあるんですが、どうも説明が足りなくて使い方が分からない。<br />
+UndoRedoManager plugin とか。<br />
+おもしろそうなんだけど、さっぱりわからんのだー。<br />
+<br />
+ま。最後のが一番よさそうですけどね。<br />
+<br />
+で、今回の課題はこのエディターで文字を入力してる最中にそのイベントを取りたいってことなんだけども、<br />そもそもこういうエディターというのはフォームの textarea に設定するけれども、textarea そのものは非表示にして、その近くに iframe をつっこんで
+<pre class="brush: html">
+&lt;div&gt;
+ &lt;iframe style="height: 305px; width: 415px;"&gt;
+  &lt;html&gt;
+   &lt;head&gt;
+   &lt;/head&gt;
+   &lt;body&gt;
+   &lt;/body&gt;
+  &lt;/html&gt;
+ &lt;/iframe&gt;
+&lt;/div&gt;
+</pre>
+みたいにして。<br />
+<br />
+でhtmlを表示させて機能しているようで、DOMがどうなってるんだかさっぱり分からない。<br />
+どういうからくりになってるんだか・・・。<br />
+<br />
+で、結論から言うと、<br />
+編集中の文字とかを取り出すには
+<pre class="brush: js">
+$('iframe').contents().find('body').html()
+</pre>
+keyupのイベントを取り出すには、
+<pre class="brush: js">
+$('iframe').contents().keyup(function(){
+ // なにか処理
+}
+</pre>
+
+でいけます。<br />
+試しに文字を入力する度にその中の文字数を表示するというのをやってみると、<br />
+<pre class="brush: js">
+&lt;script language="Javascript" src="jquery-1.3.2.min.js" type="text/javascript"&gt;&lt;/script&gt;
+&lt;script language="Javascript" src="htmlbox.min.js" type="text/javascript"&gt;&lt;/script&gt;
+&lt;script language="Javascript" src="formState.js" type="text/javascript"&gt;&lt;/script&gt;
+
+&lt;textarea id='hb'&gt;&lt;/textarea&gt;
+&lt;script language="Javascript" type="text/javascript"&gt;
+var hb = $("#hb").htmlbox({
+ buttons:[
+  ["separator_dots","bold","italic","underline"]
+ ],
+ icons:"default",
+ skin:"green"
+});
+
+$(function() {
+ $('iframe').contents().keyup(function(){
+  $('#count').val($('iframe').contents().find('body').text().length);
+ });
+});
+&lt;/script&gt;
+&lt;input type="text" id="count" /&gt;
+</pre>
+こんな感じになります。

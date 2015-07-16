@@ -1,0 +1,48 @@
+---
+layout: post
+title: Javascriptで配列の後ろからn個だけ要素を削除する
+date: '2010-08-07T10:55:00.002+09:00'
+author: 上田 剛
+tags:
+- Javascript
+modified_time: '2010-08-07T10:56:34.241+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1478427912107572081
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/08/javascriptn.html
+---
+
+だいたいどこのサイトでも要素の削除にはspliceを使え、マイナスにすれば後ろから削除できる、と書いてあるんだが、そのマイナスの意味がよく分からないので実験してみた。<br />
+基本的にはこんな風にしておいて、アラートで結果を確認することとしよう。<br />
+<pre class="brush: js">
+items = new Array("1", "2", "3", "4", "5", "6");
+items.splice(1, 2);
+for(i = 0; i < items.length; i++){
+   alert(items[i]);
+}
+</pre>
+これの結果は、<br />
+<pre class="brush: js">
+("1", "4", "5", "6")
+</pre>
+
+じゃあこうすると、<br />
+<pre class="brush: js">
+items.splice(-1, 2);
+</pre>
+
+こうなる。<br />
+<pre class="brush: js">
+("1", "2", "3", "4", "5")
+</pre>
+
+どうもマイナスにすると、一番最後から数えるってだけのようです。<br />
+つまり、一番最後から3個削除したいんだったら、<br />
+<pre class="brush: js">
+items.splice(-3, 3);
+</pre>
+
+こうすればいいと。これを<br />
+<pre class="brush: js">
+items.splice(-3);
+</pre>
+
+こう書くと、Firefoxやchoromeでは同じく3個削除で動くがIEでは全く削除されない。

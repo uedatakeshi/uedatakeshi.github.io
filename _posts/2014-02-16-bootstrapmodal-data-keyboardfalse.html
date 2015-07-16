@@ -1,0 +1,31 @@
+---
+layout: post
+title: BootstrapのModal使う時は data-keyboard="false" にしておく
+date: '2014-02-16T17:47:00.000+09:00'
+author: 上田 剛
+tags:
+- Javascript
+- html
+modified_time: '2014-02-16T17:47:00.221+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5325009595049235798
+blogger_orig_url: http://uedatakeshi.blogspot.com/2014/02/bootstrapmodal-data-keyboardfalse.html
+---
+
+<h1>BootstrapのModal使う時は data-keyboard="false" にしておく</h1><br />
+<a href="http://getbootstrap.com/"><img title="Bootstrap" src="http://capture.heartrails.com/400x300/border?http://getbootstrap.com/" alt="http://getbootstrap.com/" width="400" height="300" /></a><br />
+<br />
+まあ、同じModalでも画像を表示するとかだったらいいんだが、<br />
+大体うちらが作るようなモーダルはそのなかにformがあってなんかを入力するようなmodal だ。<br />
+入力中に日本語の変換を間違えたのでescキーを押したらモーダルが消えたんだよ！とクレームが付く。<br />
+<br />
+ということで、モーダルの中身を書く部分に data-keyboard="false" を追加する。<br />
+<br />
+<pre class="brush: html">&lt;div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-keyboard="false"&gt;
+</pre><br />
+こんな感じ。<br />
+ついでなんで書いとくと、そのモーダルにAjaxで別ソースを読み込ませたい場合は以下のようにする。<br />
+<br />
+<pre class="brush: js">$('#myModal').empty().modal('show').load("another.php");
+</pre><br />
+この方がよく使うだろう。モーダルの中味を別テンプレートにできるし、フォームを動的に生成するphpも別ファイルにできる。<br />
+<br />

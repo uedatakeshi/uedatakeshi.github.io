@@ -1,0 +1,109 @@
+---
+layout: post
+title: DISTINCT と ORDER BY を一緒に使う時の、PostgresとMySQLの違い
+date: '2010-04-17T15:05:00.006+09:00'
+author: 上田 剛
+tags:
+- MySQL
+- Postgres
+modified_time: '2010-04-17T15:12:05.979+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-676164132702775928
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/04/distinct-oeder-by-postgresmysql.html
+---
+
+今やってるやつで、出てきた現象なのでちょっとメモ。<br />
+例えば items というようなテーブルがあって、id と name がある。
+<pre class="brush: shell">
+ id |  name
+----+--------
+  1 | test
+  2 | sample
+</pre>
+
+で、この items には複数のカテゴリーとサブカテゴリーが紐づけられている。<br />
+紐づけ用のテーブルは items_categories というようなもので、こんな感じになっている。
+<pre class="brush: shell">
+ item_id | category_id | sub_category_id | orders
+---------+-------------+-----------------+--------
+       1 |           1 |               1 |      2
+       1 |           1 |               2 |      2
+       2 |           1 |               2 |      1
+</pre>
+アイテム1はサブカテゴリー1と2に、アイテム2はサブカテゴリー2に紐付いていて、どちらもカテゴリーは1だが、<br />
+そのカテゴリー1の中での並ぶ順番が orders ということで設定されている。<br />
+アイテム2が順番は1、アイテム1が2番と。<br />
+<br />
+で、こいつをまず順番関係なしに、join してみると<br />
+<pre class="brush: sql">
+SELECT ic.item_id, i.name 
+FROM items_categories ic 
+INNER JOIN items i ON ic.item_id=i.id
+WHERE ic.category_id=1
+</pre>
+
+こうなる。
+<pre class="brush: shell">
+ item_id |  name
+---------+--------
+       1 | test
+       1 | test
+       2 | sample
+</pre>
+orders 順にしたいので、
+
+<pre class="brush: sql">
+SELECT ic.item_id, i.name 
+FROM items_categories ic 
+INNER JOIN items i ON ic.item_id=i.id
+WHERE ic.category_id=1
+ORDER BY ic.orders
+</pre>
+
+とすると、
+<pre class="brush: shell">
+ item_id |  name
+---------+--------
+       2 | sample
+       1 | test
+       1 | test
+</pre>
+これは動く。item_id が重複してるので、distinct を使うと、
+<pre class="brush: sql">
+SELECT DISTINCT ic.item_id, i.name 
+FROM items_categories ic 
+INNER JOIN items i ON ic.item_id=i.id
+WHERE ic.category_id=1
+ORDER BY ic.orders
+</pre>
+
+Postgresの場合、エラーになる。
+<pre class="brush: shell">
+ERROR:  for SELECT DISTINCT, ORDER BY expressions must appear in select list
+</pre>
+
+MySQLの場合、
+<pre class="brush: shell">
+ item_id |  name
+---------+--------
+       2 | sample
+       1 | test
+</pre>
+出る。<br />
+Postgresでも
+
+<pre class="brush: sql">
+SELECT DISTINCT ic.item_id, i.name, ic.orders 
+FROM items_categories ic 
+INNER JOIN items i ON ic.item_id=i.id
+WHERE ic.category_id=1
+ORDER BY ic.orders
+</pre>
+
+とすればちゃんと出る。
+<pre class="brush: shell">
+ item_id |  name  | orders
+---------+--------+--------
+       2 | sample |      1
+       1 | test   |      2
+</pre>
+そりゃ、おかしいのはMySQLでしょう。この場合。

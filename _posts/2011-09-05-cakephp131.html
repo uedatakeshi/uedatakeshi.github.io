@@ -1,0 +1,86 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(1) データベースの作成
+date: '2011-09-05T06:37:00.004+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:11:02.822+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-2128477853982172776
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp131.html
+---
+
+<h1>データベースの作成</h1>
+<p>いろんなやり方があるとは思いますが、まずはデータベースを作っておくのがいいと思います。<br />
+今回はMySQLで作りました。</p>
+<pre class="brush: sql">
+CREATE DATABASE cake_db CHARACTER SET utf8;
+GRANT all ON cake_db.* TO cake_user@localhost IDENTIFIED BY 'password';
+</pre>
+<p>
+users は管理側の管理者アカウントです。<br />
+管理側はAuthコンポーネントを使って認証するので、テーブル名を users にしておきます。<br />
+他の名前でも可能ですが、users が Auth コンポーネントのデフォルトなのでそうしておいた方が面倒がなくてよいです。
+</p>
+<pre class="brush: sql">
+CREATE TABLE users (
+ id INT(11) AUTO_INCREMENT,
+ username VARCHAR(100) NOT NULL,
+ password VARCHAR(100) NOT NULL,
+ name VARCHAR(100),
+ email VARCHAR(100),
+ PRIMARY KEY (id)
+);
+</pre>
+<p>membersは会員の情報を入れるテーブルです。<br />
+本当はここにstatusフィールドを入れて、仮登録・本登録の処理を入れたかったのですが、今回は見送りました。</p>
+<pre class="brush: sql">
+CREATE TABLE members (
+ id int(11) AUTO_INCREMENT,
+ email VARCHAR(100) NOT NULL,
+ password VARCHAR(100) NOT NULL,
+ type_id INT(11) NOT NULL,
+ birthday DATE,
+ img1 VARCHAR(255),
+ img2 VARCHAR(255),
+ created DATETIME,
+ modified DATETIME,
+ PRIMARY KEY (id),
+ KEY type_id (type_id)
+);
+</pre>
+<p>typesは会員種別のマスターです。<br />
+一般会員、とか特別会員、とかのデータを入れます。</p>
+<pre class="brush: sql">
+CREATE TABLE types (
+ id int(11) AUTO_INCREMENT,
+ name VARCHAR(100) NOT NULL,
+ PRIMARY KEY (id)
+);
+</pre>
+<p>favoritesは会員の「好きな物」の選択値を入れます。<br />
+「好きな物」でも「趣味」でも何でもいいんですが、要は複数選択の場合の処理を入れたいのです。</p>
+<pre class="brush: sql">
+CREATE TABLE favorites (
+ id int(11) AUTO_INCREMENT,
+ name VARCHAR(100) NOT NULL,
+ PRIMARY KEY (id)
+);
+</pre>
+
+<p>members_favorites は会員情報と好きな物を関連づけるためのテーブルです。<br />
+多対多の関係になるのでいわゆる HABTM の連結になります。</p>
+<pre class="brush: sql">
+CREATE TABLE members_favorites (
+ id int(11) AUTO_INCREMENT,
+ member_id INT(11) NOT NULL,
+ favorite_id INT(11) NOT NULL,
+ PRIMARY KEY (id),
+ KEY member_id (member_id),
+ KEY favorite_id (favorite_id)
+);
+</pre>
+<br />
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp132 %}">>>次のページ「CakePHPの設置」へ</a></li>
+</ul>

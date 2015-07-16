@@ -1,0 +1,395 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(5) bakeする(model)
+date: '2011-09-05T21:17:00.004+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:09:54.223+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1198498016199316545
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp135.html
+---
+
+<h1>bakeする(model)</h1>
+
+<p> 続いてbakeしてモデル、コントローラ、ビューを作ります。<br />
+作るんですが、その前にマスターにデータを入れておきます。<br />
+テーブルの types と favorites は、値が入ってるだけのマスターテーブルです。<br />
+今回これの管理機能は提供しません。<br />
+ということで最初にテーブルにデータを入れておきます。<br />
+別に普通にSQLのinsert文で入れておくだけです。
+</p>
+<pre class="brush: sql">
+INSERT INTO types (id, name) VALUES (1, '一般');
+INSERT INTO types (id, name) VALUES (2, '専門');
+INSERT INTO favorites (id, name) VALUES (1, 'apple');
+INSERT INTO favorites (id, name) VALUES (2, 'orange');
+INSERT INTO favorites (id, name) VALUES (3, 'grape');
+</pre>
+<p> で、最初にmembersテーブルのモデルから作ります。
+<pre class="brush: shell">
+cd Sites/cake/app
+cake bake
+</pre>
+と打つと、
+<pre class="brush: shell">
+Welcome to CakePHP v1.3.11 Console
+---------------------------------------------------------------
+App : app
+Path: /Users/myname/Sites/cake/app
+---------------------------------------------------------------
+Interactive Bake Shell
+---------------------------------------------------------------
+[D]atabase Configuration
+[M]odel
+[V]iew
+[C]ontroller
+[P]roject
+[F]ixture
+[T]est case
+[Q]uit
+What would you like to Bake? (D/M/V/C/P/F/T/Q) 
+> 
+</pre>
+と表示されて入力待ちになるので、 M を入れます。
+<pre class="brush: shell">
+> M
+---------------------------------------------------------------
+Bake Model
+Path: /Users/myname/Sites/cake/app/models/
+---------------------------------------------------------------
+Possible Models based on your current database:
+1. Favorite
+2. Member
+3. MembersFavorite
+4. Type
+5. User
+Enter a number from the list above,
+type in the name of another model, or 'q' to exit  
+[q] >
+</pre>
+となるのでここで2番を選びます。
+</p>
+<p>
+あとは対話しながら選択していくだけです。
+<pre class="brush: shell">
+A displayField could not be automatically detected
+would you like to choose one? (y/n) 
+> y
+</pre>
+displayField が自動で見つけられなかった、自分で選ぶかい？
+と聞かれるのでyesとすると、
+<pre class="brush: shell">
+1. id
+2. email
+3. password
+4. type_id
+5. birthday
+6. img1
+7. img2
+8. created
+9. modified
+Choose a field from the options above:  
+> 2
+</pre>
+members テーブルのカラム名が一覧されるので、２番の email を選択します。
+</p>
+<p>
+<pre class="brush: shell">
+Would you like to supply validation criteria 
+for the fields in your model? (y/n) 
+[y] > y
+</pre>
+続いてバリデーションの設定をする。
+<pre class="brush: shell">
+Field: id
+Type: integer
+---------------------------------------------------------------
+Please select one of the following validation options:
+---------------------------------------------------------------
+1 - alphanumeric
+2 - between
+3 - blank
+4 - boolean
+5 - cc
+6 - comparison
+7 - custom
+8 - date
+9 - decimal
+10 - email
+11 - equalto
+12 - extension
+13 - inlist
+14 - ip
+15 - maxlength
+16 - minlength
+17 - money
+18 - multiple
+19 - notempty
+20 - numeric
+21 - phone
+22 - postal
+23 - range
+24 - ssn
+25 - time
+26 - url
+27 - userdefined
+28 - uuid
+29 - Do not do any validation on this field.
+... or enter in a valid regex validation string.
+  
+[29] > 
+</pre>
+というように、カラム id について1から29までのルールが表示されるので、その中から適用するルールを選びます。
+[] 内に表示されているのはcakephpが推測する値です。
+一回選ぶ度に、
+<pre class="brush: shell">
+Would you like to add another validation rule? (y/n) 
+[n] > 
+</pre>
+と、追加のルールがあるかどうか聞いてくるので、ルールは複数選べます。
+とりあえず、
+<dl>
+<dt>id:</dt><dd>29</dd>
+<dt>email:</dt><dd> 7, 10, 19</dd>
+<dt>password:</dt><dd> 7, 19</dd>
+<dt>type_id:</dt><dd> 20</dd>
+<dt>birthday:</dt><dd> 8</dd>
+<dt>img1:</dt><dd> 29</dd>
+<dt>img2:</dt><dd> 29</dd>
+<dt>created: </dt><dd>29</dd>
+<dt>modified:</dt><dd> 29</dd>
+</dl>
+
+と、番号を選択して進みます。
+</p>
+<p>
+<pre class="brush: shell">
+Would you like to define model associations
+(hasMany, hasOne, belongsTo, etc.)? (y/n) 
+[y] > 
+</pre>
+関連づけをするかどうかの確認です。YESです。
+<pre class="brush: shell">
+One moment while the associations are detected.
+---------------------------------------------------------------
+Please confirm the following associations:
+---------------------------------------------------------------
+Member belongsTo Type? (y/n) 
+[y] > y
+Member hasAndBelongsToMany Favorite? (y/n) 
+[y] > y
+Would you like to define some additional model associations? (y/n) 
+[n] > n
+</pre>
+とすると、
+
+<pre class="brush: shell">
+---------------------------------------------------------------
+The following Model will be created:
+---------------------------------------------------------------
+Name:       Member
+DB Table:   `members`
+Validation: Array
+(
+    [email] => Array
+        (
+            [custom] => custom
+            [email] => email
+            [notempty] => notempty
+        )
+
+    [password] => Array
+        (
+            [custom] => custom
+            [notempty] => notempty
+        )
+
+    [type_id] => Array
+        (
+            [numeric] => numeric
+        )
+
+    [birthday] => Array
+        (
+            [date] => date
+        )
+
+)
+
+Associations:
+ Member belongsTo Type
+ Member hasAndBelongsToMany Favorite
+---------------------------------------------------------------
+Look okay? (y/n) 
+[y] > 
+</pre>
+とでるので、yesすると、
+<pre class="brush: shell">
+Baking model class for Member...
+
+Creating file /Users/myname/Sites/cake/app/models/member.php
+Wrote `/Users/myname/Sites/cake/app/models/member.php`
+</pre>
+モデルが作られました。
+</p>
+<p>
+最後にtestも作っておきます。
+<pre class="brush: shell">
+SimpleTest is not installed. Do you want to bake unit test files anyway? (y/n) 
+[y] > y
+
+You can download SimpleTest from http://simpletest.org
+
+Baking test fixture for Member...
+
+Creating file /Users/myname/Sites/cake/app/tests/fixtures/member_fixture.php
+Wrote `/Users/myname/Sites/cake/app/tests/fixtures/member_fixture.php`
+Bake is detecting possible fixtures..
+
+Creating file /Users/myname/Sites/cake/app/tests/cases/models/member.test.php
+Wrote `/Users/myname/Sites/cake/app/tests/cases/models/member.test.php`
+</pre>
+</p>
+<p>
+作成された /app/models/member.php の中味はこんな感じです。
+<pre class="brush: php">
+class Member extends AppModel {
+ var $name = 'Member';
+ var $displayField = 'email';
+ var $validate = array(
+  'email' => array(
+   'custom' => array(
+    'rule' => array('custom'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+   'email' => array(
+    'rule' => array('email'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+   'notempty' => array(
+    'rule' => array('notempty'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+  'password' => array(
+   'custom' => array(
+    'rule' => array('custom'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+   'notempty' => array(
+    'rule' => array('notempty'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+  'type_id' => array(
+   'numeric' => array(
+    'rule' => array('numeric'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+  'birthday' => array(
+   'date' => array(
+    'rule' => array('date'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+ );
+ //The Associations below have been created with all possible keys, those that are not needed can be removed
+
+ var $belongsTo = array(
+  'Type' => array(
+   'className' => 'Type',
+   'foreignKey' => 'type_id',
+   'conditions' => '',
+   'fields' => '',
+   'order' => ''
+  )
+ );
+
+ var $hasAndBelongsToMany = array(
+  'Favorite' => array(
+   'className' => 'Favorite',
+   'joinTable' => 'members_favorites',
+   'foreignKey' => 'member_id',
+   'associationForeignKey' => 'favorite_id',
+   'unique' => true,
+   'conditions' => '',
+   'fields' => '',
+   'order' => '',
+   'limit' => '',
+   'offset' => '',
+   'finderQuery' => '',
+   'deleteQuery' => '',
+   'insertQuery' => ''
+  )
+ );
+
+}
+</pre>
+よさそうな感じですね。
+</p>
+<p>
+あとは同様にusersテーブルについても作っておきます。関連づけはなしですね。
+<pre class="brush: php">
+class User extends AppModel {
+ var $name = 'User';
+ var $displayField = 'name';
+ var $validate = array(
+  'username' => array(
+   'notempty' => array(
+    'rule' => array('notempty'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+  'password' => array(
+   'notempty' => array(
+    'rule' => array('notempty'),
+    //'message' => 'Your custom message here',
+    //'allowEmpty' => false,
+    //'required' => false,
+    //'last' => false, // Stop validation after this rule
+    //'on' => 'create', // Limit validation to 'create' or 'update' operations
+   ),
+  ),
+ );
+}
+</pre>
+</p>
+<br />
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-09-cakephp136 %}">>>次のページ「bakeする(controller)」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp134 %}">&lt;&lt;前のページ「schemaを作る」へ</a></li>
+</ul>

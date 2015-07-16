@@ -1,0 +1,61 @@
+---
+layout: post
+title: postgreSQLで通し番号（シーケンス）をリセットする時に1から始めたい場合
+date: '2010-10-25T18:28:00.001+09:00'
+author: 上田 剛
+tags:
+- Postgres
+modified_time: '2010-10-25T18:28:51.683+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8599983002839724498
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/10/postgresql1.html
+---
+
+postgreSQL で id とかのフィールドで自動的に番号が増えていく、auto_increment みたいな設定をテーブルにすると、シーケンスが作られる。<br />
+例えばこんなテーブルを作ると<br />
+<pre class="brush: sql">
+CREATE TABLE users(
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255)
+);
+</pre>
+
+こんなんなる。<br />
+<pre class="brush: shell">
+ Schema |     Name     |   Type   |  Owner
+--------+--------------+----------+----------
+ public | users        | table    | postgres
+ public | users_id_seq | sequence | postgres
+</pre>
+
+しばらく users にデータをインサートした後で、<br />
+このシーケンスに対してセレクトをかけると、<br />
+<pre class="brush: sql">
+SELECT * FROM users_id_seq ;
+</pre>
+
+こんな結果が返ってくる<br />
+<pre class="brush: shell">
+ sequence_name | last_value | increment_by |      max_value      | ・・・
+---------------+------------+--------------+---------------------+-------
+ users_id_seq  |         34 |            1 | 9223372036854775807 | ・・・
+</pre>
+この last_value というのが自動で増えていった id の最後の番号で、これが34になったまま、 users テーブルのデータを消してしまうと、次は id が34から始まってしまう。<br />
+1からにしたい、という時に、<br />
+<pre class="brush: sql">
+select setval ('users_id_seq', 1);
+</pre>
+
+とやるんだが、こうすると last_value が1になるので、次は2からになってしまう。<br />
+じゃあ、<br />
+<pre class="brush: sql">
+select setval ('users_id_seq', 0);
+</pre>
+
+としてみたらどうかと思うが、これはエラーになる。<br />
+<br />
+ということでこうするとよい。<br />
+<pre class="brush: sql">
+select setval ('users_id_seq', 1, false);
+</pre>
+<br />
+一回目は last_value は1のままで、is_called が true になり、二回目は last_value は2になる。<br />

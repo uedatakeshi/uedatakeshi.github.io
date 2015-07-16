@@ -1,0 +1,95 @@
+---
+layout: post
+title: jQuery、Form Plugin を使って、file upload する、ファイルを選択したら自動でその画像が表示されるようにする
+date: '2010-09-11T14:29:00.004+09:00'
+author: 上田 剛
+tags:
+- php
+- jQuery
+modified_time: '2010-09-11T14:35:27.616+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-9093911947521542467
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/09/jqueryform-plugin-file-upload.html
+---
+
+まあ、とにかくファイルアップロード系のプラグインってのはあるようでないようで、これというのがない。<br />
+もう探し疲れたよ、ほんとに。<br />
+ファイルのアップロードのインターフェースはこういうのがいいんだ、っていう部分で人によって意見が違いすぎるんだよな、結局。<br />
+だから作者によって考えてることが全然別々で。<br />
+ということで、一番シンプルで、機能がなくて、ただアップロードできるだけ、というものを考えてみた。<br />
+まず、HTML側はこうする。<br />
+<pre class="brush: html">
+&lt;form id="upload" method="post" action="form.php" &gt;
+  &lt;input type="file" name="sample" id="sample" /&gt;
+  &lt;img id="sample_img" src="img/sample.jpg"&gt;
+&lt;/form&gt;
+</pre>
+sample.jpg はデフォルトの画像で用意してあって、最初から表示されているんだけど、ファイル参照で別の画像を選べばそれに置き換わる、というようなものを作ろうってことだ。<br />
+<br />
+まず、<br />
+<a href="http://www.malsup.com/jquery/form/">http://www.malsup.com/jquery/form/</a><br />
+こちらから Form Plugin を入手して、読み込む。<br />
+<pre class="brush: html">
+&lt;script type="text/javascript" src="js/jquery-1.4.2.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="js/jquery.form.js"&gt;&lt;/script&gt;
+</pre>
+で、ファイル選択したらファイルアップロードをする php に処理を渡せばいいので、<br />
+<pre class="brush: js">
+$(document).ready(function() {
+  $("input#sample").change(function(){
+    var options = { 
+      url:       'upload.php',
+      dataType:  'xml', 
+      success:   processXml 
+    }; 
+    $('form#upload').ajaxSubmit(options); 
+  });
+});
+</pre>
+こんな感じに書く。中味は全部 form プラグインの記述。dataType で xml を選ぶのが味噌だ。<br />
+json にすると動かないので注意。<br />
+ajaxSubmit で form の action 先を upload.php に変更して、自動でサブミットしてくれる。<br />
+<br />
+ということなので upload.php を書く。<br />
+いや、これはまあ、普通に $_FILES を使ったファイルアップロード処理を php で書けばいいだけなので詳細は略。<br />
+普段自分が使ってるやつでやってくれ。<br />
+なんやかんや処理した後に、<br />
+<pre class="brush: php">
+header('Content-type: text/xml'); 
+echo &lt;&lt;&lt;END
+&lt;root&gt;
+  &lt;status&gt;$status&lt;/status&gt;
+  &lt;file_path&gt;$file_path&lt;/file_path&gt;
+  &lt;emes&gt;$emes&lt;/emes&gt;
+&lt;/root&gt;
+END;
+</pre>
+というように xml で結果を返す。上記では $status に成功したかどうか、$file_path にアップロードした画像を保存したファイルのパス、$emes にエラーメッセージ、を格納しているつもりである。<br />
+<br />
+で、アップロードに成功すると<br />
+<pre class="brush: js">
+success:   processXml 
+</pre>
+とあるように、processXml に処理が渡るので、processXml をごりごり書く。<br />
+<pre class="brush: js">
+function processXml(responseXML) {
+  var status = $('status', responseXML).text();
+  if (status == 'success') {
+    var file_path = $('file_path', responseXML).text(); 
+    $('#sample_img').attr('src', file_path);
+  } else {
+    var emes = $('emes', responseXML).text();
+    alert(emes);
+  }
+}
+</pre>
+xml のデータは<br />
+<pre class="brush: js">
+$('status', responseXML).text()
+</pre>
+というような書き方で取得できる。<br />
+ので、jQuery の .attr を使って画像のパスを書き換える。<br />
+<pre class="brush: js">
+$('#sample_img').attr('src', file_path);
+</pre>
+これでオッケーだ。<br />
+あとは好きなようにいじればよしと。<br />

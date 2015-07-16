@@ -1,0 +1,43 @@
+---
+layout: post
+title: phpにGDが入ってない！！って時にどうすればいいか
+date: '2010-11-09T13:22:00.000+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2010-11-09T13:23:01.867+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-2393113526703099245
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/11/phpgd.html
+---
+
+まあ、うちではよくある出来事で。<br />
+もう毎回の事なんだからさあ～って気もしないでもないが、やり方を教わったのでメモ。<br />
+<br />
+サーバーに入って、rootになったら、<br />
+<pre class="brush: shell">
+# yum search php
+</pre>
+と打つ。<br />
+するとだーっとリストが出る。<br />
+その中に<br />
+<pre class="brush: shell">
+php-gd.i386 : gd グラフィックライブラリを使用するための PHP アプリケーション用モジュール
+</pre>
+こんなのがある。<br />
+それをこうする。<br />
+<pre class="brush: shell">
+# yum install php-gd.i386
+</pre>
+<br />
+途中でyesかnoか聞かれるので、yesすると<br />
+<pre class="brush: shell">
+Installed:
+  php-gd.i386 0:5.1.6-27.el5
+
+Complete!
+</pre>
+というように入る。<br />
+あとは、<br />
+<pre class="brush: shell">
+# /etc/init.d/httpd restart
+</pre>
+再起動する。<br />

@@ -1,0 +1,121 @@
+---
+layout: post
+title: jQueryで作るタブのメニュー画面がリンクから飛んできた時も選択した状態にしたい
+date: '2010-05-06T18:29:00.004+09:00'
+author: 上田 剛
+tags:
+- jQuery
+modified_time: '2010-05-06T18:41:27.535+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-6691920247077514205
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/05/jquery.html
+---
+
+今開発してるシステムでちょっとおもしろそうな題材があったので紹介しておきます。<br />
+ソース全部載せると分かりづらいので一部だけで概念的に説明しますが、これはまあ、普通にレフトメニューがあって、そしてメインの部分にはタブでメニューを選択できるようなレイアウトの画面だと思って下さい。<br />
+レフトメニューはこんな感じ
+<pre class="brush: html">
+&lt;div class="left"&gt;
+    &lt;p&gt;メニュー&lt;/p&gt;
+    &lt;ul&gt;
+        &lt;li&gt;&lt;a href="sample.html#menu1"&gt;menu1&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="sample.html#menu2"&gt;menu2&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="sample.html#menu3"&gt;menu3&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="sample.html#menu4"&gt;menu4&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="sample.html#menu5"&gt;menu5&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
+メイン部分のタブはこんな感じ
+<pre class="brush: html">
+&lt;div class="menu-tab"&gt;
+    &lt;ul&gt;
+        &lt;li&gt;&lt;a href="#menu1" class="selected"&gt;menu1&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="#menu2"&gt;menu2&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="#menu3"&gt;menu3&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="#menu4"&gt;menu4&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="#menu5"&gt;menu5&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
+
+そして、このメイン部分のタブ表示の下に、以下のような、各タブをクリックした時に表示すべき内容を menu1 から menu5 まで全部並べておきます。
+
+<pre class="brush: html">
+&lt;div class="menu"&gt;
+    &lt;div id="menu1" class="list"&gt;
+        menu1の内容
+    &lt;/div&gt;
+    &lt;div id="menu2" class="list"&gt;
+        menu2の内容
+    &lt;/div&gt;
+    &lt;div id="menu3" class="list"&gt;
+        menu3の内容
+    &lt;/div&gt;
+    &lt;div id="menu4" class="list"&gt;
+        menu4の内容
+    &lt;/div&gt;
+    &lt;div id="menu5" class="list"&gt;
+        menu5の内容
+    &lt;/div&gt;
+&lt;/div&gt;
+</pre>
+これを jQuery を使って、menu2 のタブをクリックした時は &lt;div id="menu2"&gt; の内容だけを表示させ、かつ、<br /> &lt;a href="#menu2"&gt; のタブには選択した状態のクラス（selected）をあてたい、しかもレフトメニューからのクリックでも同じ動きができて、レフトメニューはサイト内の他のページにもそのまま（同じまま）設置されるので、他のページから、<br /> &lt;a href="sample.html#menu2"&gt; というリンクで飛んできた時にも menu2 の内容を表示したい、ということなんですね。<br />
+<br />
+んで、最初に送られてきたソースがこんな感じでした。
+<pre class="brush: js">
+$("div.list:not("+$(".menu-tab li a.selected").attr("href")+")").hide();
+$(".menu-tab li a").click(function(){
+    $(".menu-tab li a").removeClass("selected");
+    $(this).addClass("selected");
+    $("div.list").hide();
+    $($(this).attr("href")).show();
+    return false;
+});
+</pre>
+1行目で、クラスが selected になっている（＝つまり選択状態）のタブの href 属性を取得して（この場合は #menu1 ）、それ以外の $("div.list")、すなわち各メニューの内容を隠しています。<br />
+2行目でタブのクリックを取得して、クリックされたタブについてあれこれ処理しています。<br />
+3行目は全てのタブから selected クラスの除去。<br />
+4行目は選択されたタブに selected クラスを付加。<br />
+5行目は各メニューの内容を一旦全部隠して。<br />
+6行目でクリックされたタブの href 属性と同じ id のメニューの内容を表示。<br />
+<br />
+このままでは確かにレフトメニューからクリックされた時も、このページに他のページからリンクで飛んできた時も動きません。<br />
+ということで、どうやって、&lt;a href="sample.html#menu2"&gt; の#以下の部分を取得するか、なんですが、とりあえず
+<pre class="brush: js">
+location.hash
+</pre>
+で取得できる、ということです。<br />
+あと、jQueryの .attr() の場合は単に、
+<pre class="brush: js">
+.attr("hash")
+</pre>
+でいけると。<br />
+今回の場合基本的に #menu2 という文字列がキーになっていて、あとはタブ部分のオブジェクトをなにがしか操作すればよさそうなので、メインの部分はこんな感じで。
+<pre class="brush: js">
+$(function(){
+    var selected_tab = location.hash;
+    var link_tab = $(".menu-tab li a");
+
+    tabchange(selected_tab, link_tab);
+
+    $(".menu-tab li a, .left li a").click(function(){
+        tabchange($(this).attr("hash"), link_tab);
+    });
+});
+</pre>
+tabchange という function を別途用意することにして、それに #menu2 という文字列と、タブ部分のオブジェクトを渡してなんとかすることにします。<br />
+7行目は、タブをクリックしたか、あるいはレフトメニューをクリックしたか、で動かして、クリックしたリンクの .attr("hash") を渡す処理にしています。<br />
+ということで、function tabchange はこんな感じで。
+
+<pre class="brush: js">
+function tabchange(selected_tab, link_tab){
+    link_tab.removeClass("selected");
+    link_tab.each(function(n){
+        if ($(this).attr("hash") == selected_tab){$(this).addClass("selected");}
+    });
+    $(selected_tab).siblings().hide();
+    $(selected_tab).show();
+}
+</pre>
+each とか、siblings とか使っちゃってますが、やってる内容は元々のやつと同じです。<br />
+一応完成っす。

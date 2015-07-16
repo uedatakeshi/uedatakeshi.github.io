@@ -1,0 +1,235 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(4) schemaを作る
+date: '2011-09-05T16:42:00.004+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:10:09.818+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8312851442526400136
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp134.html
+---
+
+<h1>schemaを作る</h1>
+
+<p>ここでついでなので schema を作っておきます。
+自分は今 app フォルダーの中にいるので、そのまま
+<pre class="brush: shell">
+cake schema generate -f
+</pre>
+と打ちます。
+<pre class="brush: shell">
+Welcome to CakePHP v1.3.11 Console
+---------------------------------------------------------------
+App : app
+Path: /Users/myname/Sites/cake/app
+---------------------------------------------------------------
+Cake Schema Shell
+---------------------------------------------------------------
+Generating Schema...
+Schema file: schema.php generated
+</pre>
+とメッセージが出て終了。
+</p>
+<p>
+/app/config/schema/schema.php というファイルが生成されます。
+中味はこんな感じ。
+<pre class="brush: php">
+class AppSchema extends CakeSchema {
+ var $name = 'App';
+
+ function before($event = array()) {
+  return true;
+ }
+
+ function after($event = array()) {
+ }
+
+ var $favorites = array(
+  'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
+  'name' => array('type' => 'string', 'null' => false, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1)),
+  'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'MyISAM')
+ );
+ var $members = array(
+  'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
+  'email' => array('type' => 'string', 'null' => false, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'password' => array('type' => 'string', 'null' => false, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'type_id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'index'),
+  'birthday' => array('type' => 'date', 'null' => true, 'default' => NULL),
+  'img1' => array('type' => 'string', 'null' => true, 'default' => NULL, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'img2' => array('type' => 'string', 'null' => true, 'default' => NULL, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'created' => array('type' => 'datetime', 'null' => true, 'default' => NULL),
+  'modified' => array('type' => 'datetime', 'null' => true, 'default' => NULL),
+  'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'type_id' => array('column' => 'type_id', 'unique' => 0)),
+  'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'MyISAM')
+ );
+ var $members_favorites = array(
+  'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
+  'member_id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'index'),
+  'favorite_id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'index'),
+  'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'member_id' => array('column' => 'member_id', 'unique' => 0), 'favorite_id' => array('column' => 'favorite_id', 'unique' => 0)),
+  'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'MyISAM')
+ );
+ var $types = array(
+  'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
+  'name' => array('type' => 'string', 'null' => false, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1)),
+  'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'MyISAM')
+ );
+ var $users = array(
+  'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
+  'username' => array('type' => 'string', 'null' => false, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'password' => array('type' => 'string', 'null' => false, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'name' => array('type' => 'string', 'null' => true, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'email' => array('type' => 'string', 'null' => true, 'default' => NULL, 'length' => 100, 'collate' => 'utf8_general_ci', 'charset' => 'utf8'),
+  'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1)),
+  'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'MyISAM')
+ );
+}
+</pre>
+これを作っておけば、環境が変わって、データベースがMySQLからPostgreSQLに変わったりしても、すぐにデータベースを構築できます。
+</p>
+<p>
+その場合は、
+<pre class="brush: shell">
+cake schema create
+</pre>
+と打ちます。
+</p>
+<p>
+例えばこいつをPostgreSQLの環境で構築したデータベースはこうなりました。
+<pre class="brush: shell">
+cake_db=# ¥d
+                    List of relations
+ Schema |           Name           |   Type   |  Owner
+--------+--------------------------+----------+----------
+ public | favorites                | table    | postgres
+ public | favorites_id_seq         | sequence | postgres
+ public | members                  | table    | postgres
+ public | members_favorites        | table    | postgres
+ public | members_favorites_id_seq | sequence | postgres
+ public | members_id_seq           | sequence | postgres
+ public | types                    | table    | postgres
+ public | types_id_seq             | sequence | postgres
+ public | users                    | table    | postgres
+ public | users_id_seq             | sequence | postgres
+(10 rows)
+
+cake_db=# ¥d users
+                                  Table "public.users"
+  Column  |          Type          |                     Modifiers
+
+----------+------------------------+----------------------------------------------------
+ id       | integer                | not null default nextval('users_id_seq'::regclass)
+ username | character varying(100) | not null
+ password | character varying(100) | not null
+ name     | character varying(100) | default NULL::character varying
+ email    | character varying(100) | default NULL::character varying
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+
+cake_db=# ¥d members
+                                    Table "public.members"
+  Column  |            Type             |                      Modifiers
+----------+-----------------------------+------------------------------------------------------
+ id       | integer                     | not null default nextval('members_id_seq'::regclass)
+ email    | character varying(100)      | not null
+ password | character varying(100)      | not null
+ type_id  | integer                     | not null
+ birthday | date                        |
+ img1     | character varying(255)      | default NULL::character varying
+ img2     | character varying(255)      | default NULL::character varying
+ created  | timestamp without time zone | not null
+ modified | timestamp without time zone | not null
+Indexes:
+    "members_pkey" PRIMARY KEY, btree (id)
+    "type_id" btree (type_id)
+
+cake_db=# ¥d favorites
+                                 Table "public.favorites"
+ Column |          Type          |                       Modifiers
+--------+------------------------+--------------------------------------------------------
+ id     | integer                | not null default nextval('favorites_id_seq'::regclass)
+ name   | character varying(100) | not null
+Indexes:
+    "favorites_pkey" PRIMARY KEY, btree (id)
+
+cake_db=# ¥d types
+                                 Table "public.types"
+ Column |          Type          |                     Modifiers
+--------+------------------------+----------------------------------------------------
+ id     | integer                | not null default nextval('types_id_seq'::regclass)
+ name   | character varying(100) | not null
+Indexes:
+    "types_pkey" PRIMARY KEY, btree (id)
+
+cake_db=# ¥d members_favorites
+                            Table "public.members_favorites"
+   Column    |  Type   |                           Modifiers
+-------------+---------+----------------------------------------------------------------
+ id          | integer | not null default nextval('members_favorites_id_seq'::regclass)
+ member_id   | integer | not null
+ favorite_id | integer | not null
+Indexes:
+    "members_favorites_pkey" PRIMARY KEY, btree (id)
+    "favorite_id" btree (favorite_id)
+    "member_id" btree (member_id)
+</pre>
+</p>
+<p>
+MySQL からPostgreSQL へデータベースが変わるなんてことはないかもしれないし、後でやっても構わない訳ですが、作っておけば後々便利ということでせっかく今ターミナルを開いてる訳ですから schema だけは作っておいて損はないだろうと思います。
+<br />
+データベースは MySQL のままでも、開発用環境を移す時にコマンド一発でデータベースを作れてしまうのでとても楽ですね。<br />
+</p>
+<p>
+ちなみに、
+<pre class="brush: shell">
+cake schema create
+</pre>
+の実行は、まず既存のテーブルを削除してから、新規にテーブルを作成する、という処理になるので、テーブルが存在していないのに、「削除しますか?」
+で「はい」と返事すると、だーっとエラーが出ます。
+が、特に問題はありません。
+
+<pre class="brush: shell; highlight: 19">
+Welcome to CakePHP v1.3.11 Console
+---------------------------------------------------------------
+App : app
+Path: /Users/myname/Sites/cake/app
+---------------------------------------------------------------
+Cake Schema Shell
+---------------------------------------------------------------
+
+The following table(s) will be dropped.
+favorites
+members
+members_favorites
+types
+users
+Are you sure you want to drop the table(s)? (y/n) 
+[n] > y
+Dropping table(s).
+
+ここでWarning発生!
+
+The following table(s) will be created.
+favorites
+members
+members_favorites
+types
+users
+Are you sure you want to create the table(s)? (y/n) 
+[y] > 
+Creating table(s).
+favorites updated.
+members updated.
+members_favorites updated.
+types updated.
+users updated.
+End create.
+</pre>
+</p>
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp135 %}">>>次のページ「bakeする(model)」へ</a></li>
+<li><a href="{{ site.baseurl }}{% post_url 2011-09-05-cakephp133 %}">&lt;&lt;前のページ「データベース接続」へ</a></li>
+</ul>

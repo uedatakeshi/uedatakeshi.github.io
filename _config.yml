@@ -1,0 +1,11 @@
+# Site settings
+title: ブログ：続・図書館合金
+description: > # this means to ignore newlines until "baseurl:"
+  開発メモ,主に補足by子連れ親父プログラマー
+baseurl: "" # the subpath of your site, e.g. /blog/
+url: "https://uedatakeshi.github.io" # the base hostname & protocol for your site
+twitter_username: uedatakeshi
+github_username:  uedatakeshi
+
+# Build settings
+markdown: kramdown

@@ -1,0 +1,80 @@
+---
+layout: post
+title: 延々と修正HTMLが送られてくる場合の対応について
+date: '2010-03-20T12:40:00.001+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2010-03-20T12:40:25.382+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-431537705033434947
+---
+
+延々と修正HTMLが送られてくる場合の対応について
+
+
+最初に自分が作ったテンプレートファイルがあるとする。index.tpl
+例えばこんなようなソースだったとする。
+
+<tr>
+	<td>name</td>
+	<td><input type="text" name="name" value="{$name}" /></td>
+</tr>
+
+
+コミットする
+
+$ git commit -a -m 'index form add'
+
+新しくブランチを作る
+
+$ git branch design
+
+そっちにチェックアウト
+
+$ git checkout design
+
+デザイナーからこんなのが届く。
+
+<tr>
+	<td>family-name</td>
+	<td><input type="text" name="name" /></td>
+</tr>
+
+
+デザイナーから来た修正ファイルをペーストして
+
+$ git add -p
+diff --git a/index.html b/index.html
+index 1876618..103c855 100622
+--- a/index.html
++++ b/index.html
+@@ -1,5 +1,5 @@
+ <tr>
+-       <td>name</td>
+-       <td><input type="text" name="name" value="{$name}" /></td>
++       <td>family-name</td>
++       <td><input type="text" name="name" /></td>
+ </tr>
+
+Stage this hunk [y,n,a,d,/,e,?]?
+
+y、nで変更点だけ残す
+コミットする
+
+$ git commit -m 'meta add'
+
+ここでcommit -a してしまわないように注意！
+してしまったらあわてずにやり直す
+
+$ git reset HEAD^
+
+変更点をのける
+
+$ git stash
+
+マスターにもどって
+
+$ git checkout master
+
+マージする
+
+$ git merge design

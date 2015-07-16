@@ -1,0 +1,118 @@
+---
+layout: post
+title: gitを使ってデザイナーとの並行作業でテンプレートを修正する
+date: '2010-03-20T06:07:00.008+09:00'
+author: 上田 剛
+tags:
+- git
+- Smarty
+modified_time: '2010-03-20T12:13:27.823+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-2875122998568167103
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/03/git.html
+---
+
+テンプレートで修正が入った場合について、<br />
+例えば自分が作った index.tpl がこんなようなソースだったとする。
+<pre class="brush: html">
+&lt;div&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+&lt;/div&gt;
+</pre>
+まずはコミットする。
+<pre class="brush: shell">
+$ git add index.tpl
+$ git commit -m 'first commit'
+</pre>
+ここで一旦リリースするが、その時にブランチを作っておく
+<pre class="brush: shell">
+$ git branch design_fix
+</pre>
+その後なにか修正する。<br />
+例えば、以下のようにエラーメッセージの表示を追加した。
+<pre class="brush: html">
+&lt;div&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+{$message|escape}
+&lt;/div&gt;
+</pre>
+それをコミットする
+<pre class="brush: shell">
+$ git commit -a -m 'add message'
+</pre>
+それを知らないデザイナーからファイルが届いた。<br />
+divにclass指定が追加になってる。
+<pre class="brush: html">
+&lt;div class="main"&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+&lt;/div&gt;
+</pre>
+作っておいたデザイナー用のブランチに移動して、
+<pre class="brush: shell">
+$ git checkout design_fix
+</pre>
+この状態で、デザイナーが作った index.tpl をコピーしてからコミットする。
+<pre class="brush: shell">
+$ git commit -a -m 'design chenged'
+</pre>
+再びマスターに戻り、マージする
+<pre class="brush: shell">
+$ git checkout master
+$ git merge design_fix
+</pre>
+以下のようにマージされた。
+<pre class="brush: html">
+&lt;div class="main"&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+{$message|escape}
+&lt;/div&gt;
+</pre>
+ここでまたすかさず次のブランチを作っておくといいかもしれない。<br />
+<br />
+問題なのは、デザイナーの修正が、以下のようなものだった場合、
+<pre class="brush: html">
+&lt;div&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+&lt;h2&gt;12 colors&lt;/h2&gt;
+&lt;/div&gt;
+</pre>
+マージでエラーになる。
+<pre class="brush: shell">
+Auto-merging index.tpl
+CONFLICT (content): Merge conflict in index.tpl
+Automatic merge failed; fix conflicts and then commit the result.
+</pre>
+そのindex.tplを見るとこんなんなってる。
+<pre class="brush: html">
+&lt;div&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+<<<<<<< HEAD:index.tpl
+{$message|escape}
+=======
+&lt;h2&gt;12 colors&lt;/h2&gt;
+>>>>>>> design_fix:index.tpl
+&lt;/div&gt;
+</pre>
+message の行と h2 の行とどっちが上でどっちが下か分からないってことだろう。<br />
+以下のように順番を決めて編集保存して、
+<pre class="brush: html">
+&lt;div&gt;
+&lt;h1&gt;Colored Pencils&lt;/h1&gt;
+&lt;h2&gt;12 colors&lt;/h2&gt;
+{$message|escape}
+&lt;/div&gt;
+</pre>
+コミットする。
+<pre class="brush: shell">
+$ git commit -a -m 'design fix'
+</pre>
+無事マージされた
+<pre class="brush: shell">
+--- a/index.tpl
++++ b/index.tpl
+@@@ -1,5 -1,5 +1,6 @@@
+  &lt;div&gt;
+  &lt;h1&gt;Colored Pencils&lt;/h1&gt;
++ &lt;h2&gt;12 colors&lt;/h2&gt;
+ +{$message|escape}
+  &lt;/div&gt;
+</pre>

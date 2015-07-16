@@ -1,0 +1,42 @@
+---
+layout: post
+title: JavaScript の継承とカプセル化
+date: '2011-11-13T07:31:00.000+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-13T07:32:28.475+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5143643095015480626
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/11/javascript.html
+---
+
+<h1>JavaScript の継承とカプセル化</h1>
+<p>
+参考文献：Supercharged JavaScript Graphics: with HTML5 canvas, jQuery, and More
+より。</p>
+
+<p>いろんなやり方があるが、これが一番自然な方法なんじゃないかと筆者は言っている。</p>
+<pre class="brush: js">
+&lt;script type="text/javascript"&gt;
+var pet = function(name, legs) {
+    var that = {
+        name: name,
+        getDetails: function(){
+            return that.name + ' has ' + legs + ' legs';
+        }
+    };
+    return that;
+};
+var cat = function(name) {
+    var that = pet(name, 4);
+    that.action = function(){
+        return 'free as a bird';
+    };
+    return that;
+};
+&lt;/script&gt;
+</pre>
+<pre class="brush: js">
+var neko = cat('tama');
+</pre>
+
+<p>こうして neko を作った後で、neko の name を変えることはできるが、legs は変えられない、という訳である。</p>

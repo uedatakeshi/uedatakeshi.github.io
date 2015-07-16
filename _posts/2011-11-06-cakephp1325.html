@@ -1,0 +1,69 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(25) 検索結果CSVダウンロード
+date: '2011-11-06T06:46:00.001+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:03:47.349+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8104382731251099385
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/11/cakephp1325.html
+---
+
+<h1>検索結果CSVダウンロード</h1>
+
+<p>検索結果をCSVでダウンロードする処理を追加します。
+検索の処理部分は全く同じで言い訳ですから、同じadmin_serchアクションに、またモードを指定して、ダウンロードモードの時はCSVにするようにします。
+まず、レイアウトとビューを用意しておきます。
+/app/views/layouts/csv.ctp を新規作成して、</p>
+<pre class="brush: php">
+&lt;?php
+    header('content-type: text/plain');
+    header("Content-Type: application/octet-stream");
+    header("Content-Disposition: attachment; filename=member.csv");
+?&gt;
+&lt;?php echo $content_for_layout; ?&gt;
+</pre>
+
+<p>とします。
+ビューは、
+/app/views/members/admin_download.ctpとして、</p>
+<pre class="brush: php">
+&lt;?php foreach ($members as $member): ?&gt;
+&lt;?php 
+    echo $member['Member']['id'];
+    echo $member['Member']['email'];
+    echo $member['Member']['password'];
+    echo $member['Type']['name'];
+    echo $this-&gt;Time-&gt;format($format = 'Y/m/d', $member['Member']['birthday']);
+    echo $this-&gt;Time-&gt;format($format = 'Y/m/d', $member['Member']['created']); 
+?&gt; 
+&lt;?php endforeach; ?&gt;
+</pre>
+
+<p>このように書いておきます。
+で、会員検索のビュー、admin_search.ctp に以下を追加しておきます。</p>
+<pre class="brush: php">
+&lt;p&gt;&lt;?php echo $this-&gt;Paginator-&gt;link(__('CSVダウンロード', true), array('mode'=&gt;'DL')); ?&gt;&lt;/p&gt;
+</pre>
+<p>こうするとリンクに引数を渡せます。
+で、コントローラ members_controller.php のadmin_searchアクションの一番下に、</p>
+<pre class="brush: php">
+        if ((isset($this-&gt;passedArgs['mode'])) && ($this-&gt;passedArgs['mode'] == 'DL')) {
+            Configure::write('debug', 0);
+            $this-&gt;layout = 'csv';
+            $data = $this-&gt;Member-&gt;find('all',  array(
+                'order'=&gt;array('Member.id'),
+                'conditions' =&gt; $conditions
+            ));
+            $this-&gt;set("members", $data);
+            $this-&gt;render('admin_download');
+        }
+</pre>
+
+<p>を追加します。 mode=”DL” で来た時は $conditions だけ引き継いで検索し直してる感じですかね。</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/11/cakephp1326.html">>>次のページ「バッチ処理」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/11/cakephp1324.html">&lt;&lt;前のページ「検索とPaginationとHABTM」へ</a></li>
+</ul>

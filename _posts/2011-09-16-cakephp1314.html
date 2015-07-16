@@ -1,0 +1,94 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(14) checkbox の validate
+date: '2011-09-16T06:20:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:06:55.695+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-3201746963644432290
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp1314.html
+---
+
+<h1>checkbox の validate</h1>
+
+<p>動作がおかしい「好きな物」のチェックボックスを直していきます。</p>
+<p>「好きな物」は Favorite モデルですが、あくまでここでは Member を登録している訳ですから Member モデルとして処理します。<br />
+今 add.ctp でこうなってる部分を、
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('Favorite', array('multiple'=&gt;'checkbox', 'label' =&gt; '好きな物'));
+</pre>
+こうします。</p>
+<pre class="brush: php">
+        echo $this-&gt;Form-&gt;input('favorites', array('multiple'=&gt;'checkbox', 'label' =&gt; '好きな物'));
+</pre>
+<p>するとなんと！</p>
+<pre class="brush: php">
+&lt;input type="checkbox" id="MemberFavorites1" value="1" name="data[Member][favorites][]"&gt;
+</pre>
+<p>こういうソースが生成されます。<br />
+これはモデル Member です。<br />
+<br />
+ということで Member モデルの方にルールを書きます。<br />
+/app/models/member.php の $validate が書かれている部分の 'birthday' の下に以下を追加します。</p>
+<pre class="brush: php">
+        'favorites'=&gt;array(
+            'custom' =&gt; array(
+                'rule'=&gt;array('multiple', array('min' =&gt; 1, 'max' =&gt; 3)),
+                'message' =&gt; '好きな物は一つ以上選択してください'
+            ),
+        ),
+</pre>
+<p>次にコントローラに移動して、確認画面の時に validate するように members_controller.php を書き換えます。
+<pre class="brush: php">
+if (!empty($this-&gt;data)) {
+</pre>
+から始まる if 文の最初に、
+<pre class="brush: php">
+$this-&gt;data['Favorite']['Favorite'] = $this-&gt;data['Member']['favorites'];
+</pre>
+を入れます。</p>
+<p>これで favorites を本来の Favorite に入れ直しています。
+で、
+<pre class="brush: php">
+if ($this-&gt;data['Member']['mode'] == 'confirm') {
+</pre>
+から始まる mode="confirm" の部分の if 文を以下のように変えます。</p>
+<pre class="brush: php">
+if ($this-&gt;data['Member']['mode'] == 'confirm') {
+    $this-&gt;Member-&gt;set($this-&gt;data);
+    if ($this-&gt;Member-&gt;validates($this-&gt;data)) {
+        $this-&gt;set('member', $this-&gt;data);
+        $this-&gt;render('confirm');
+    } else {
+        $this-&gt;Session-&gt;setFlash(__('エラーがあります', true));
+    }
+} elseif ($this-&gt;data['Member']['mode'] == 'back') {//
+</pre>
+<p>これで正しくエラーチェックが動くようになりました。</p>
+
+<p>あとまだ、好きな物チェックボックスの確認画面がおかしいので、<br />
+今 confirm.ctp の<br />
+<pre class="brush: php">
+    echo $this-&gt;Form-&gt;input('Favorite', array('type'=&gt;'hidden'));
+</pre>
+こうなっているところを、
+<pre class="brush: php">
+    foreach ($member['Member']['favorites'] as $k =&gt; $v){
+        echo $this-&gt;Form-&gt;input("Member.favorites.$k", array('type'=&gt;'hidden'));
+    }
+</pre>
+このようにします。</p>
+<p>これで生成されるHTMLの hidden の部分が、
+<pre class="brush: html">
+&lt;input id="MemberFavorites0" type="hidden" value="1" name="data[Member][favorites][0]"&gt;
+&lt;input id="MemberFavorites1" type="hidden" value="3" name="data[Member][favorites][1]"&gt;
+</pre>
+のように出力されるようになります。</p>
+<p>戻るボタンクリックでも値が保持されています。<br />
+今まで保存されていなかった members_favorites テーブル にもデータが保存されています。</p>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="">>>次のページ「メール送信」へ</a></li>
+<li><a href="">&lt;&lt;前のページ「checkbox、 戻るボタン、年月セレクト、完了画面」へ</a></li>
+</ul>

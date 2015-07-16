@@ -1,0 +1,83 @@
+---
+layout: post
+title: MacPortsでOSXにphp5.3を入れる
+date: '2010-03-18T06:42:00.004+09:00'
+author: 上田 剛
+tags:
+- OSX
+- port
+- php
+- apache
+modified_time: '2010-03-20T11:00:13.871+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1495720794756349977
+blogger_orig_url: http://uedatakeshi.blogspot.com/2010/03/macportsosxphp53.html
+---
+
+OSXに、php5.3を入れようということで、
+<pre class="brush: shell">
+port installed
+</pre>
+で見たところ、apache2とかはもうインストール済みになってるみたいだったので、もう一回以下のコマンドでphpのインストールに挑戦。
+<pre class="brush: shell">
+sudo port -d install php5 +apache2 +macox +mysql5 +pear +postgres +sockets +sqlite
+</pre>
+最後に出た以下のメッセージを完全に見逃す
+<pre class="brush: shell">
+To customize php, copy
+/opt/local/etc/php5/php.ini-development (if this is a development server) or
+/opt/local/etc/php5/php.ini-production (if this is a production server) to
+/opt/local/etc/php5/php.ini and then make changes.
+
+If this is your first install, you need to activate PHP in your web server.
+
+To enable PHP in Apache, run
+  cd /opt/local/apache2/modules
+  /opt/local/apache2/bin/apxs -a -e -n "php5" libphp5.so
+</pre>
+こうして入れたシステム一式は、OSXの
+<pre class="brush: shell">
+/opt/local
+</pre>
+の下に入るようです。<br />
+PHPのバージョン5.3.2になっている。
+<pre class="brush: shell">
+$ php -v
+PHP 5.3.2 (cli) (built: Mar 18 2010 03:49:53) 
+Copyright (c) 1997-2010 The PHP Group
+Zend Engine v2.3.0, Copyright (c) 1998-2010 Zend Technologies
+</pre>
+pearも入っている。
+<pre class="brush: shell">
+$ pear -V
+PEAR Version: 1.9.0
+PHP Version: 5.3.2
+Zend Engine Version: 2.3.0
+</pre>
+でアパッチを起動したいということで、
+<pre class="brush: shell">
+sudo launchctl load -w /Library/LaunchDaemons/org.macports.apache2.plist 
+</pre>
+とりあえずこうするだけでapache動いた。<br />
+が、phpが動いていない。
+そこで、以下を実行。
+<pre class="brush: shell">
+sudo cp php.ini-development php.ini
+sudo /opt/local/apache2/bin/apxs -a -e -n "php5" libphp5.so
+</pre>
+アパッチのhttpd.confに<br />
+以下を追加。
+<pre class="brush: shell">
+Include conf/extra/mod_php.conf
+</pre>
+以下を付け足し。
+<pre class="brush:shell">
+<IfModule dir_module>
+    DirectoryIndex index.html index.php
+</IfModule>
+</pre>
+で、
+<pre class="brush: shell">
+sudo /opt/local/apache2/bin/apachectl restart
+</pre>
+したら、phpもオッケーに。<br />
+なったがな、しかし。だな。

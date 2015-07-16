@@ -1,0 +1,142 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(8) フォームの見た目を変える
+date: '2011-09-11T03:39:00.005+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:09:01.518+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-371959970333042647
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/09/cakephp138.html
+---
+
+<h1>フォームの見た目を変える</h1>
+
+<p>ということで無事 members の会員登録部分が動くようになりました。
+すぐに気づくことですが、デフォルトのテンプレートの見た目が気に入らないです。
+会員の一覧画面はともかく、 /members/add の登録画面とか。
+見た目の整形は最後にまとめてやっても構わない訳ですが、なんだかこのまま作業するのも気が重い。
+ここでちょっといじりたい、というのが人情でしょう。
+とりあえず、アクション add の場合で言うと、今自動生成されたテンプレートはこうなっています。
+</p>
+<pre class="brush: php">
+ &lt;fieldset&gt;
+  &lt;legend&gt;&lt;?php __('Add Member'); ?&gt;&lt;/legend&gt;
+ &lt;?php
+  echo $this-&gt;Form-&gt;input('email');
+  echo $this-&gt;Form-&gt;input('password');
+  echo $this-&gt;Form-&gt;input('type_id');
+  echo $this-&gt;Form-&gt;input('birthday');
+  echo $this-&gt;Form-&gt;input('img1');
+  echo $this-&gt;Form-&gt;input('img2');
+  echo $this-&gt;Form-&gt;input('Favorite');
+ ?&gt;
+ &lt;/fieldset&gt;
+</pre>
+<p>
+fieldset とか legend が気に入らないですね。
+ということで、本家サイトのドキュメントにあるとおり、デフォルトのテンプレートをコピーして、編集します。
+<blockquote>
+<a href="http://book.cakephp.org/view/789/Modify-default-HTML-produced-by-baked-templates">9.3 Modify default HTML produced by "baked" templates</a>
+</blockquote>
+</p>
+<p>先に、/app/vendors/shells/templates/ 以下に、自分が作るテンプレート用のディレクトリを作っておきます。
+ここでは<br />
+<pre class="brush: shell">
+/app/vendors/shells/templates/mytheme
+</pre>
+としました。</p>
+<p>
+そして、
+<pre class="brush: shell">
+cd Sites/cake/cake/console/templates/default
+cp -r views /Users/myname/Sites/cake/app/vendors/shells/templates/mytheme/views
+</pre>
+として、デフォルトのテンプレートを自分のところへコピーします。
+</p>
+<p>
+上記 views の中にある form.ctp を開いて、
+<pre class="brush: php;highlight: [1, 2,19]">
+ &lt;fieldset&gt;
+  &lt;legend&gt;&lt;?php printf("&lt;?php __('%s %s'); ?&gt;", Inflector::humanize($action), $singularHumanName); ?&gt;&lt;/legend&gt;
+&lt;?php
+  echo "\t&lt;?php\n";
+  foreach ($fields as $field) {
+   if (strpos($action, 'add') !== false && $field == $primaryKey) {
+    continue;
+   } elseif (!in_array($field, array('created', 'modified', 'updated'))) {
+    echo "\t\techo \$this-&gt;Form-&gt;input('{$field}');\n";
+   }
+  }
+  if (!empty($associations['hasAndBelongsToMany'])) {
+   foreach ($associations['hasAndBelongsToMany'] as $assocName =&gt; $assocData) {
+    echo "\t\techo \$this-&gt;Form-&gt;input('{$assocName}');\n";
+   }
+  }
+  echo "\t?&gt;\n";
+?&gt;
+ &lt;/fieldset&gt;
+</pre>
+
+こうなっているところを、
+<pre class="brush: php;highlight: [1]">
+ &lt;h2&gt;&lt;?php printf("&lt;?php __('%s %s'); ?&gt;", Inflector::humanize($action), $singularHumanName); ?&gt;&lt;/h2&gt;
+&lt;?php
+  echo "\t&lt;?php\n";
+  foreach ($fields as $field) {
+   if (strpos($action, 'add') !== false && $field == $primaryKey) {
+    continue;
+   } elseif (!in_array($field, array('created', 'modified', 'updated'))) {
+    echo "\t\techo \$this-&gt;Form-&gt;input('{$field}');\n";
+   }
+  }
+  if (!empty($associations['hasAndBelongsToMany'])) {
+   foreach ($associations['hasAndBelongsToMany'] as $assocName =&gt; $assocData) {
+    echo "\t\techo \$this-&gt;Form-&gt;input('{$assocName}');\n";
+   }
+  }
+  echo "\t?&gt;\n";
+?&gt;
+</pre>
+とします。</p>
+<p>
+fieldset と legend を削除して、h2 に変えたってだけです。
+再度 cake bake でビューを作り直します。
+</p>
+<p>
+前回同様yes-noで進んでいくと、今度は、以下のようにテンプレートが選べるメニューが出ます。
+<pre class="brush: shell">
+---------------------------------------------------------------
+You have more than one set of templates installed.
+Please choose the template set you wish to use:
+---------------------------------------------------------------
+1. mytheme
+2. default
+Which bake theme would you like to use? (1/2) 
+[1] > 1
+</pre>
+自分が作ったテンプレートを選びます。
+</p>
+<p>
+/app/views/members/add.ctp を確認すると、
+<pre class="brush: php">
+ &lt;h2&gt;
+  &lt;?php __('Add Member'); ?&gt;&lt;/h2&gt;
+ &lt;?php
+  echo $this-&gt;Form-&gt;input('email');
+  echo $this-&gt;Form-&gt;input('password');
+  echo $this-&gt;Form-&gt;input('type_id');
+  echo $this-&gt;Form-&gt;input('birthday');
+  echo $this-&gt;Form-&gt;input('img1');
+  echo $this-&gt;Form-&gt;input('img2');
+  echo $this-&gt;Form-&gt;input('Favorite');
+ ?&gt;
+</pre>
+自分用のテンプレートが適用されています。
+</p>
+<br />
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="">>>次のページ「レイアウトその1」へ</a></li>
+<li><a href="">&lt;&lt;前のページ「Validate」へ</a></li>
+</ul>

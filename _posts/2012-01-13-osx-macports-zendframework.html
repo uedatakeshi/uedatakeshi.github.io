@@ -1,0 +1,69 @@
+---
+layout: post
+title: OSX の MacPorts で ZendFramework を入れてみた
+date: '2012-01-13T17:59:00.002+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2012-01-13T18:01:59.168+09:00'
+thumbnail: http://4.bp.blogspot.com/-5vF-sisD0NQ/Tw_yvB-uQGI/AAAAAAAAAYA/ocCzpIXQuCU/s72-c/Mozilla%2BFirefox%2B-%2BFirefox.png
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-8500557350958986824
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/01/osx-macports-zendframework.html
+---
+
+<h1>OSX の MacPorts で ZendFramework を入れてみた</h1>
+
+<p>
+まずは、インストール。
+検索すると、
+<pre class="brush: shell">
+port search zend
+</pre>
+こうでるので、
+<pre class="brush: shell">
+ZendFramework @1.11.11 (www, lang)
+    A framework for developing PHP web applications
+</pre>
+こうする。</p>
+<pre class="brush: shell">
+sudo port install ZendFramework
+</pre>
+<p>インストールの最後の方でこんなメッセージが出る。</p>
+<pre class="brush: shell">
+If this is your first install, you might want to add  /opt/local/www/ZendFramework/library to the
+include_path in your php.ini  (e.g. include_path = ".:/opt/local/www/ZendFramework/library"). 
+
+If you want to use the extra ZendX components  you might want to add
+/opt/local/www/ZendFramework/extras/library too  (e.g. include_path =
+".:/opt/local/www/ZendFramework/library:/opt/local/www/ZendFramework/extra/library").
+</pre>
+
+<p>ということで、php.ini を編集。</p>
+<pre class="brush: shell">
+cd /opt/local/etc/php5
+sudo vim php.ini
+</pre>
+<p>として、include_path の部分を、
+<pre class="brush: shell">
+include_path = ".:/opt/local/lib/php:/opt/local/www/ZendFramework/library:/opt/local/www/ZendFramework/extra/library"
+</pre>
+とする。アパッチ再起動。</p>
+<pre class="brush: shell">
+sudo /opt/local/apache2/bin/apachectl restart
+</pre>
+<p>で、zendのコマンドラインツールであるzf.shが使えるようにパスを通しておく。</p>
+<pre class="brush: shell">
+vim ~/.profile
+</pre>
+<p>でエディターを起動して、以下を追加。</p>
+<pre class="brush: shell">
+export PATH=/opt/local/www/ZendFramework/bin:$PATH
+</pre>
+<p>アプリを作りたいディレクトリへ行って、
+<pre class="brush: shell">
+zf create project sample
+</pre>
+と打つ。</p>
+
+<p>こんな画面が表示された。</p>
+
+<a href="http://4.bp.blogspot.com/-5vF-sisD0NQ/Tw_yvB-uQGI/AAAAAAAAAYA/ocCzpIXQuCU/s1600/Mozilla%2BFirefox%2B-%2BFirefox.png"><img style="cursor:pointer; cursor:hand;width: 320px; height: 216px;" src="http://4.bp.blogspot.com/-5vF-sisD0NQ/Tw_yvB-uQGI/AAAAAAAAAYA/ocCzpIXQuCU/s320/Mozilla%2BFirefox%2B-%2BFirefox.png" border="0" alt=""id="BLOGGER_PHOTO_ID_5697038943446253666" /></a>

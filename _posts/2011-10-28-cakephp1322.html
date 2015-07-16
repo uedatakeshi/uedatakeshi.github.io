@@ -1,0 +1,147 @@
+---
+layout: post
+title: CakePHP1.3で作る会員管理システム(22) 会員一覧と会員検索
+date: '2011-10-28T06:27:00.001+09:00'
+author: 上田 剛
+tags: 
+modified_time: '2011-11-06T07:04:49.088+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-1244974882104772566
+blogger_orig_url: http://uedatakeshi.blogspot.com/2011/10/cakephp1322.html
+---
+
+<h1>会員一覧と会員検索</h1>
+
+<p>会員管理を作ります。<br />
+最初に、いまのままだと見づらいので、一覧（indexアクション）の整形をしておきます。<br />
+admin_index.ctp を開いて、不要な列を削除します。<br />
+今は、</p>
+<pre class="brush: php">
+    &lt;table cellpadding="0" cellspacing="0"&gt;
+    &lt;tr&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('id');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('email');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('password');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('type_id');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('birthday');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('img1');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('img2');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('created');?&gt;&lt;/th&gt;
+            &lt;th&gt;&lt;?php echo $this-&gt;Paginator-&gt;sort('modified');?&gt;&lt;/th&gt;
+            &lt;th class="actions"&gt;&lt;?php __('Actions');?&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+</pre>
+<p>こうなっていますが、password img1 img2 modified あたりはなくてもよいと思います。<br />
+（クライアント次第ですが）<br />
+対応する td の方も削除しておきます。</p>
+
+
+<p>と、一見して、登録日（created）がＤＢの日付データそのままで出力されていて見づらいです。<br />
+ということで、 members_controller.php の helper にさらに ‘Time’ を追加します。</p>
+<pre class="brush: php">
+class MembersController extends AppController {
+
+    var $name = 'Members';
+    var $helpers = array('Javascript', 'Time');
+</pre>
+
+<p>で、ビューに戻り、誕生日と登録日は、<br />
+こうなっているのを</p>
+<pre class="brush: php">
+        &lt;td&gt;&lt;?php echo $member['Member']['birthday']; ?&gt;&nbsp;&lt;/td&gt;
+        &lt;td&gt;&lt;?php echo $member['Member']['created']; ?&gt;&nbsp;&lt;/td&gt;
+</pre>
+
+<p>こうします。</p>
+<pre class="brush: php">
+        &lt;td&gt;&lt;?php echo $this-&gt;Time-&gt;format($format='Y/m/d', $member['Member']['birthday']); ?&gt;&nbsp;&lt;/td&gt;
+        &lt;td&gt;&lt;?php echo $this-&gt;Time-&gt;format($format='Y/m/d', $member['Member']['created']); ?&gt;&nbsp;&lt;/td&gt;
+</pre>
+
+<p>ついでに、</p>
+<pre class="brush: php">
+&lt;div class="actions"&gt;
+...
+&lt;/div&gt;
+</pre>
+
+<p>の中のアクションリストは不要なので丸ごと削除しておきます。<br />
+最後に paginate の設定を入れておきます。<br />
+members_controller.php の上の方に、</p>
+<pre class="brush: php">
+    var $paginate = array(
+        'limit' =&gt; 15,
+        'order' =&gt; array(
+            'Member.id' =&gt; 'desc'
+        ),
+    );
+</pre>
+<p>を入れます。15件で改ページ、デフォルトの並び順を会員のID降順にします。<br />
+引き続き、会員検索のページの準備をします。<br />
+一覧の admin_index.ctp にそのまま検索フォームをつけてしまうというのもありかとは思いますが、とりあえず今回は別ビュー、別アクションにします。<br />
+admin_index.ctp を別の名前で保存で admin_serch.ctp を作ります。<br />
+で、フォーム開始を</p>
+<pre class="brush: php">
+    &lt;?php echo $this-&gt;Form-&gt;create(array("action" =&gt; "search", "type" =&gt; "post")); ?&gt;
+</pre>
+<p>として、</p>
+<pre class="brush: php">
+    &lt;table&gt;
+        &lt;tr&gt;
+            &lt;th&gt;入会日&lt;/th&gt;
+            &lt;td&gt;
+                &lt;?php echo $this-&gt;Form-&gt;year("from", '2011','2012'); ?&gt;年
+                &lt;?php echo $this-&gt;Form-&gt;month("from",null,array('monthNames'=&gt;false)); ?&gt;月
+                &lt;?php echo $this-&gt;Form-&gt;day("from",null); ?&gt;日
+                ～
+                &lt;?php echo $this-&gt;Form-&gt;year("to", '2011','2012'); ?&gt;年
+                &lt;?php echo $this-&gt;Form-&gt;month("to",null,array('monthNames'=&gt;false)); ?&gt;月
+                &lt;?php echo $this-&gt;Form-&gt;day("to",null); ?&gt;日
+            &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;th&gt;メールアドレス&lt;/th&gt;
+            &lt;td&gt;
+            &lt;?php echo $this-&gt;Form-&gt;text("email"); ?&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;th&gt;種別&lt;/th&gt;
+            &lt;td&gt;
+            &lt;?php echo $this-&gt;Form-&gt;select("type_id", $types); ?&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;th&gt;好きな物&lt;/th&gt;
+            &lt;td&gt;
+            &lt;?php echo $this-&gt;Form-&gt;input('favorites', array('multiple'=&gt;'checkbox', 'label' =&gt; false)); ?&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/table&gt;
+     
+    &lt;?php echo $this-&gt;Form-&gt;end('        検索        '); ?&gt;
+</pre>
+<p>このような検索フォーム部分を追加します。<br />
+さらにその下に</p>
+<pre class="brush: php">
+    &lt;?php $this-&gt;Paginator-&gt;options(array('url' =&gt; $searchword  )); ?&gt;
+</pre>
+
+<p>peginator のオプションを入れておきます。<br />
+これは peginator に検索キーワードを渡すためのものです。<br />
+
+とりあえず、members_controller.php に以下のアクションと追加しておきます。</p>
+<pre class="brush: php">
+    function admin_search() {
+        $this-&gt;Member-&gt;recursive = 0;
+        $this-&gt;set('members', $this-&gt;paginate());
+        $types = $this-&gt;Member-&gt;Type-&gt;find('list');
+        $favorites = $this-&gt;Member-&gt;Favorite-&gt;find('list');
+        $this-&gt;set(compact('types', 'favorites'));
+    }
+</pre>
+
+<ul>
+<li><a href="http://uedatakeshi.blogspot.com/p/cakephp13.html#index">>>目次へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1323.html">>>次のページ「検索とPagination」へ</a></li>
+<li><a href="http://uedatakeshi.blogspot.com/2011/10/cakephp1321.html">&lt;&lt;前のページ「アカウント管理」へ</a></li>
+</ul>

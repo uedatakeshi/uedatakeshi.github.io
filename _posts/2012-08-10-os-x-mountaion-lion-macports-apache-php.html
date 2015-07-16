@@ -1,0 +1,137 @@
+---
+layout: post
+title: OS X Mountaion Lion で MacPorts を使って開発環境を整える(apache, PHP編)
+date: '2012-08-10T23:30:00.000+09:00'
+author: 上田 剛
+tags:
+- OSX
+- port
+- php
+- apache
+modified_time: '2012-08-10T23:30:00.039+09:00'
+blogger_id: tag:blogger.com,1999:blog-2052559951721308867.post-5544610111151576362
+blogger_orig_url: http://uedatakeshi.blogspot.com/2012/08/os-x-mountaion-lion-macports-apache-php.html
+---
+
+<h1>OS X Mountaion Lion で MacPorts を使って開発環境を整える(apache, PHP編)</h1><br />
+<p>という訳で無事 Mountaion Lion のクリーンインストールも完了し、開発環境を再構築しようってことで四苦八苦。<br />
+まずはMacPortsのこのページ</p><br />
+<p><a href="http://www.macports.org/install.php">http://www.macports.org/install.php</a></p><br />
+<p>から Mountaion Lion のリンクをクリックしてダウンロード。<br />
+MacPorts をインストール。<br />
+それから Apple の開発者ページ</p><br />
+<p><a href="https://developer.apple.com/downloads/index.action">https://developer.apple.com/downloads/index.action</a></p><br />
+<p>へ行って Command Line Tools (OS X Mountain Lion) for Xcode をダウンロードしてインストール。<br />
+（実際にはここでログインが必要で、なんだっけな、iCloudのアカウントで入ってメールアドレスのVerifyがあって、そんでやっとダウンロードできる）</p><br />
+<p>そんで、まずはアパッチ。</p><br />
+<pre class="brush: shell">$ sudo port install apache2
+</pre><br />
+<p>終わり際に</p><br />
+<pre class="brush: shell">###########################################################
+# A startup item has been generated that will aid in
+# starting apache2 with launchd. It is disabled
+# by default. Execute the following command to start it,
+# and to cause it to launch at startup:
+#
+# sudo port load apache2
+###########################################################
+</pre><br />
+<p>とかって出るので、以下を実行。</p><br />
+<pre class="brush: shell">$ sudo port load apache2
+</pre><pre class="brush: shell">$ port installed
+</pre><p>として確認してみると、アパッチと一緒に</p><br />
+<pre class="brush: shell">openssl @1.0.1c_0 (active)
+ perl5 @5.12.4_0+perl5_12 (active)
+ perl5.12 @5.12.4_1 (active)
+ sqlite3 @3.7.13_0 (active)
+</pre><br />
+<p>この辺もインストールされているのが分かる。<br />
+で、次はphp。</p><br />
+<pre class="brush: shell">$ sudo port install php5 +apache2 +pear
+</pre><br />
+<p>こちらも終わり間際で</p><br />
+<pre class="brush: shell">To customize php, copy
+/opt/local/etc/php5/php.ini-development (if this is a development server) or
+/opt/local/etc/php5/php.ini-production (if this is a production server) to
+/opt/local/etc/php5/php.ini and then make changes.
+</pre><br />
+<p>と表示されるので、</p><br />
+<pre class="brush: shell">$ sudo cp /opt/local/etc/php5/php.ini-development /opt/local/etc/php5/php.ini
+</pre><br />
+<p>とする。<br />
+<br />
+ついでにphp.iniを編集して、</p><br />
+<pre class="brush: shell">$ sudo vim /opt/local/etc/php5/php.ini
+</pre><br />
+<pre class="brush: shell">[Date]
+; Defines the default timezone used by the date functions
+; http://php.net/date.timezone
+date.timezone = Asia/Tokyo 
+</pre><br />
+<p>とタイムゾーンの設定を入れておく。<br />
+引き続き、apacheのhttpd.conf を編集。</p><br />
+<pre class="brush: shell">$ sudo vim /opt/local/apache2/conf/httpd.conf
+</pre><br />
+<p>として、</p><br />
+<pre class="brush: shell"># Virtual hosts
+Include conf/extra/httpd-vhosts.conf
+</pre><br />
+<p>この部分のコメントアウトを外す。<br />
+さらに、</p><br />
+<pre class="brush: shell">AddType application/x-compress .Z
+    AddType application/x-gzip .gz .tgz
+</pre><br />
+<p>となっているあたりに以下を追加。</p><br />
+<pre class="brush: shell">AddType application/x-httpd-php .php
+</pre><br />
+<p>引き続き</p><br />
+<pre class="brush: shell">$ sudo vim /opt/local/apache2/conf/extra/httpd-vhosts.conf
+</pre><br />
+<p>を編集。下の方を全部消して、以下のように変更</p><br />
+<pre class="brush: shell">&lt;VirtualHost *:80&gt;
+   DocumentRoot "/opt/local/apache2/htdocs"
+   ServerName localhost
+ &lt;/VirtualHost&gt;
+          
+ &lt;VirtualHost *:80&gt;
+     DocumentRoot "/Users/xxxx/htdocs"
+     ServerName vhost
+     &lt;Directory "/Users/xxxx/htdocs"&gt;
+       order deny,allow
+       allow from All
+       Options All
+       AllowOverride All
+     &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
+</pre><br />
+<p>自分のユーザーフォルダーの直下にhtdocsを作っておく。</p><br />
+<pre class="brush: shell">$ mkdir /Users/xxxx/htdocs
+</pre><br />
+<p>その中に、適当な index.html を入れておく。<br />
+ついでに</p><br />
+<pre class="brush: shell">&lt;?php
+phpinfo();
+</pre><br />
+<p>とだけ書いてあるinfo.phpファイルを作って入れておく。<br />
+<br />
+あと、</p><br />
+<pre class="brush: shell">$ sudo vim /private/etc/hosts
+</pre><br />
+<p>として</p><br />
+<pre class="brush: shell">127.0.0.1   vhost
+</pre><br />
+<p>を追加。</p><br />
+<pre class="brush: shell">$ sudo /opt/local/apache2/bin/apachectl restart
+</pre><br />
+<p>でアパッチ再起動。ブラウザで見てみる。</p><br />
+<pre class="brush: shell">http://vhost/
+http://vhost/info.php
+</pre><br />
+<p>ＯＫなら mbstring とかも入れる。</p><br />
+<pre class="brush: shell">$ sudo port install php5-mbstring
+$ sudo /opt/local/apache2/bin/apachectl restart
+</pre><br />
+<p>とかやって。phpinfo() でちゃんと反映されているか確認する。<br />
+ここまでで一週間くらいかかった。（笑）<br />
+先は長いって。</p><br />
+<br />
